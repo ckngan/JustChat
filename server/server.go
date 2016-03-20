@@ -1,17 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"os"
+	"log"
 	"net"
 	"net/rpc"
-	"log"
-	"bufio"
+	"os"
 )
-
-
-
-
 
 /*
 	----DECLARED TYPES----
@@ -21,16 +17,16 @@ type MessageService int
 
 //Client object
 type ClientItem struct {
-	username string
+	username   string
 	recMsgConn *net.Conn
-	status string
+	status     string
 	nextClient *ClientItem
 }
 
 //Message Format from client
 type ClientMessage struct {
 	UserName string
-	Message string
+	Message  string
 }
 
 //Retrun to client
@@ -38,19 +34,14 @@ type ServerReply struct {
 	Message string
 }
 
-
-
-
-
 /*
 	----GLOBAL VARIABLES----
 */
 //Net Info of this server
-var serverIPPort string;
+var serverIPPort string
+
 //List of clients
-var clientList *ClientItem;
-
-
+var clientList *ClientItem
 
 func main() {
 
@@ -65,7 +56,6 @@ func main() {
 	//Initialize Clientlist
 	clientList = nil
 
-	
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
 	rpc.Register(clientService)
@@ -91,28 +81,24 @@ func main() {
 	clientSetupListener, err := net.Listen("tcp", serverIPPort)
 	checkError(err)
 
-	go func(){
-		for {
-			newClientConn, err := clientSetupListener.Accept()
-			checkError(err)
-			println("New Client Connection");
-			//setupNewClient(net.conn, rpcAddress)
-			setupNewClient(&newClientConn, rpcListener.Addr().String())
-		}
+	for {
+		newClientConn, err := clientSetupListener.Accept()
+		checkError(err)
+		println("New Client Connection")
+		//setupNewClient(net.conn, rpcAddress)
+		fmt.Println(rpcListener.Addr().String())
+		go setupNewClient(&newClientConn, rpcListener.Addr().String())
+	}
 
-	}()
-
-
-
-	otherListen, err := net.Listen("tcp", "localhost:10000")
+	/*otherListen, err := net.Listen("tcp", "localhost:10000")
 	checkError(err)
 	for {
 		//println("Blocking for Listen")
 		_, err := otherListen.Accept();
 		checkError(err)
-	}
+	}*/
 
-	println("END")
+	//println("END")
 
 }
 
@@ -123,15 +109,14 @@ func setupNewClient(clientConn *net.Conn, rpcAddrString string) {
 	//Send the information for the client to make RPC Calls to server
 	//     format of data is [IP]:[PORT]
 	//     depending on implementation, may have to split to obtain port
-	(*clientConn).Write([]byte(rpcAddrString + "\n"))
 	userName, _, err := bufio.NewReader(*clientConn).ReadLine()
 	checkError(err)
-	println("Got username: "+string(userName))
+	println("Got username: " + string(userName))
 
 	connectionAttempts := 1
 
 	for usernameTaken(string(userName)) {
-		if (connectionAttempts == 5){
+		if connectionAttempts == 5 {
 			(*clientConn).Close()
 			return
 		}
@@ -141,23 +126,21 @@ func setupNewClient(clientConn *net.Conn, rpcAddrString string) {
 		userName, _, err = bufio.NewReader(*clientConn).ReadLine()
 		checkError(err)
 		println("Got new username: " + string(userName))
-		connectionAttempts ++;
-		
+		connectionAttempts++
 	}
 
-	(*clientConn).Write([]byte("Welcome " + string(userName) + "\n"))
+	(*clientConn).Write([]byte("Welcome:" + string(userName) + "\n"))
+	(*clientConn).Write([]byte("rpcAddress-"+ rpcAddrString + "\n"))
 	println("Welcoming " + string(userName))
 
 	addClientToList(string(userName))
 }
 
-func addClientToList(username string){
-	
+func addClientToList(username string) {
 
 	newClient := &ClientItem{username, nil, "ONLINE", nil}
 
-
-	if (clientList == nil){
+	if clientList == nil {
 		clientList = newClient
 	} else {
 		newClient.nextClient = clientList
@@ -179,8 +162,8 @@ func addClientToList(username string){
 
 func usernameTaken(username string) bool {
 	next := clientList
-	for next!= nil{
-		if ((*next).username == username){
+	for next != nil {
+		if (*next).username == username {
 			return true
 		}
 		next = (*next).nextClient
@@ -188,10 +171,9 @@ func usernameTaken(username string) bool {
 	return false
 }
 
-func sendToAllClients(from string, message string){
+func sendToAllClients(from string, message string) {
 
 }
-
 
 /*
 	RPC METHODS FOR CLIENTS
@@ -207,8 +189,6 @@ func (msgSvc *MessageService) SendMessage(message *ClientMessage, reply *ServerR
 
 	return nil
 }
-
-
 
 func checkError(err error) {
 	if err != nil {
