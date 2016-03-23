@@ -28,6 +28,9 @@ var chatServerIPPort string
 var rpcChatServerIPPort string
 var client *rpc.Client
 
+//RPC Value for receiving messages
+type MessageService int
+
 // Main method to setup for client
 func main() {
 
@@ -48,11 +51,15 @@ func main() {
 /* Method to initiate client setup */
 func clientSetup() {
 
+
 	// initial chat server connection
 	startupChatConnection()
-	//fmt.Println("Connected")
-	//fmt.Println(rpcChatServerIPPort)
-	startupMessagingConnection()
+
+	// commands to use throughout the message
+	messageCommands()
+
+	// rpc connection to receive and send messages
+	startupMessagingProtocol()
 }
 
 // Method to get client's username
@@ -116,18 +123,33 @@ func startupChatConnection() {
 	return
 }
 
-func startupMessagingConnection() {
-	messageCommands()
+func startupMessagingProtocol() {
+
+	// Registering RPC service for client message receiver
+	clientMessageService := new(MessageService)
+	rpc.Register(clientMessageService)
+
+
 	//chatServer, err := rpc.Dial("tcp", rpcChatServerIPPort)
 	//checkError(err)
-	_ = getClientMessage()
+	//_ = getClientMessage()
 	/*if (strings.ContainsAny(message, "#")) {
 		commands := parseMessage(message)
 	}*/
 
 }
 
+/* Method to check messages currently in message buffer to print to console
+*/
+func getNewMessages() {
+
+}
+// method to receive messages from the console
 func getClientMessage() string {
+	// Before we receive client message, check if their are any messages
+	// to push to console.
+	getNewMessages()
+
 	// Reading input from user for message
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
