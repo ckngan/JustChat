@@ -44,7 +44,17 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 	// if user name not taken, server dials RPC address in message.RPCAddress
 	// and updates client with new rpc address, then replies WELCOME
+	// unless there is error dialing RPC to client then replies DIAL-ERROR
 	// otherwise, server replies, USERNAME-TAKEN
+
+	return nil
+}
+
+
+//Function for storage node to announce itself to load balancer
+func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) error {
+	//if nodeName taken --> reply.errorMessage = "NAME-TAKEN"		
+	//if no error --> reply.NodeList == ListOfAllNodes ; reply.errorMessage = "SUCCESS"
 
 	return nil
 }
