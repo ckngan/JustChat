@@ -1,0 +1,65 @@
+This document serves as an API that can be updated for contracts between client/servers/loadbalancers
+
+Client API
+
+<--- Updating Client with New RPC --->
+// Method the load balancer calls on the clients to update rpc addresses using a struct ChatServer
+
+// address of chat server
+type ChatServer struct {
+	ServerName string
+	ServerRpcAddress string
+}
+
+
+func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply)
+
+<--- Servers/Clients sending files to other clients --->
+
+
+// Method for a client to call another client to transfer file data using a FileData structure
+
+// FileInfoData to build file structure in rpc call
+type FileData struct {
+	UserName string
+	FileName string
+	FileSize int64
+	Data     []byte
+}
+
+func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply)
+
+<--- Servers/Clients sending messages to other clients --->
+
+// Method for server to call client to receive message
+func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply)
+
+
+Load Balancer API
+
+<--- Clients Joining Chat service --->
+
+//Function for receiving a message from a client
+func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
+
+	// if user name not taken, server dials RPC address in message.RPCAddress
+	// and updates client with new rpc address, then replies WELCOME
+	// otherwise, server replies, USERNAME-TAKEN
+
+	return nil
+}
+
+
+
+Storage/Main server API
+
+<--- Clients Sending Message --->
+
+//Function for clients to send a message to the chat service
+func (msgSvc *MessageService) SendMessage(message *ClientMessage, reply *ServerReply)
+
+
+
+
+
+The End.

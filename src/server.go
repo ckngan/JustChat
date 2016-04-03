@@ -23,12 +23,20 @@ type ClientItem struct {
 	nextClient *ClientItem
 }
 
-//Message Format from client
+// Message Format from client
 type ClientMessage struct {
 	UserName string
 	Message  string
+	Password string
+	RpcAddress string
 }
 
+// Struct to join chat service
+type NewClientSetup struct {
+	UserName string
+	Password string
+	RpcAddress string
+}
 //Retrun to client
 type ServerReply struct {
 	Message string
@@ -179,6 +187,16 @@ func sendToAllClients(from string, message string) {
 	RPC METHODS FOR CLIENTS
 
 */
+
+//Function for receiving a message from a client
+func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
+
+	// if user name not taken, server dials RPC address in message.RPCAddress
+	// and updates client with new rpc address, then replies WELCOME
+	// otherwise, server replies, USERNAME-TAKEN
+
+	return nil
+}
 
 //Function for recieving a message from a client
 func (msgSvc *MessageService) SendMessage(message *ClientMessage, reply *ServerReply) error {
