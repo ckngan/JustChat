@@ -9,14 +9,17 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+	"syscall"
 
 	"github.com/arcaneiceman/GoVector/govec"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Message Format from client
 type ClientMessage struct {
 	UserName string
 	Message  string
+	Password string
 }
 
 // Struct to join chat service
@@ -158,8 +161,10 @@ func main() {
 		return
 	}
 	defer clientServer.Close()
-
 	// Do something to advertise global rpc address
+	clientRpcAddress = clientServer.Addr().String()
+
+	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
 	// go routine to start rpc connection for client
 	go func() {
@@ -265,12 +270,16 @@ func getClientPassword() string {
 
 	// Reading input from user for username
 	pword := ""
-	reader := bufio.NewReader(os.Stdin)
 	for {
 
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
-		inputPword, _ := reader.ReadString('\n')
-		//uname = strings.TrimSpace(inputUsername)
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+
+		/*if err == nil {
+			fmt.Println("\nPassword typed: " + string(bytePassword))
+		}*/
+
+		inputPword := string(bytePassword)
 		pword = inputPword
 		if len(pword) > 3 {
 			break

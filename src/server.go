@@ -17,25 +17,26 @@ type NodeService int
 
 //Client object
 type ClientItem struct {
-	username    string
-	password 	string
+	username   string
+	password   string
 	nextClient *ClientItem
 }
 
 // Message Format from client
 type ClientMessage struct {
-	UserName string
-	Message  string
-	Password string
+	UserName   string
+	Message    string
+	Password   string
 	RpcAddress string
 }
 
 // Struct to join chat service
 type NewClientSetup struct {
-	UserName string
-	Password string
+	UserName   string
+	Password   string
 	RpcAddress string
 }
+
 //Retrun to client
 type ServerReply struct {
 	Message string
@@ -48,10 +49,9 @@ type ClientReply struct {
 
 // address of chat server
 type ChatServer struct {
-	ServerName string
+	ServerName       string
 	ServerRpcAddress string
 }
-
 
 /*
 	----GLOBAL VARIABLES----
@@ -160,8 +160,6 @@ func authenticateFailure(username string, password string) bool {
 		next = (*next).nextClient
 	}
 
-
-
 	return false
 }
 
@@ -184,53 +182,46 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 	//check username
 	//if taken reply username taken
-	if ( authenticateFailure(message.UserName, message.Password) ){
+	if authenticateFailure(message.UserName, message.Password) {
 
-		reply.Message = "USERNAME-TAKEN";
+		reply.Message = "USERNAME-TAKEN"
 
-	//else dial rpc
+		//else dial rpc
 	} else {
 
 		clientConn, err := rpc.Dial("tcp", message.RpcAddress)
-		if(err != nil){
+		if err != nil {
 			reply.Message = "DIAL-ERROR"
 			return nil
 		}
 
-
 		var clientReply ClientReply
-		var rpcUpdateMessage ChatServer 
+		var rpcUpdateMessage ChatServer
 
 		//Dial and update the cient with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
-		if(callErr != nil){
+		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
 			return nil
 		}
 
-
-		reply.Message = "WELCOME";
+		reply.Message = "WELCOME"
 
 	}
-
-	
-
-
 
 	return nil
 }
 
-
-/* 
-		CHECK for ERRORS
+/*
+	CHECK for ERRORS
 
 */
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error ", err.Error())
+		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
 }
