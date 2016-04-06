@@ -169,6 +169,13 @@ func sendToAllClients(from string, message string) {
 
 }
 
+/* 
+	RPC METHODS FOR NODES
+
+*/
+func (nodeSvc *NodeService) DoSomething(message)
+
+
 /*
 	RPC METHODS FOR CLIENTS
 
