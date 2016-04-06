@@ -4,30 +4,34 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/arcaneiceman/GoVector/govec"
+	"log"
 	"net"
 	"net/rpc"
 	"os"
 	"strconv"
-	"log"
+	"syscall"
+
+	"github.com/arcaneiceman/GoVector/govec"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Message Format from client
 type ClientMessage struct {
 	UserName string
 	Message  string
+	Password string
 }
 
 // Struct to join chat service
 type NewClientSetup struct {
-	UserName string
-	Password string
+	UserName   string
+	Password   string
 	RpcAddress string
 }
 
 // address of chat server
 type ChatServer struct {
-	ServerName string
+	ServerName       string
 	ServerRpcAddress string
 }
 
@@ -87,45 +91,45 @@ type ClientMessageService int
 // Method for a client to call another client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply) error {
 
-		directory := getDownloadDirectory()
-		// creating file to be written to
-		newFile, err := os.Create(directory + "/" + args.FileName)
-		checkError(err)
+	directory := getDownloadDirectory()
+	// creating file to be written to
+	newFile, err := os.Create(directory + "/" + args.FileName)
+	checkError(err)
 
-		// writing file received from rpc
-		n, err := newFile.Write(args.Data)
-		checkError(err)
-		fmt.Printf("File Received with %d bytes from %s", n, args.UserName)
-		fmt.Println()
-		reply.Message = "Received"
-		return nil
+	// writing file received from rpc
+	n, err := newFile.Write(args.Data)
+	checkError(err)
+	fmt.Printf("File Received with %d bytes from %s", n, args.UserName)
+	fmt.Println()
+	reply.Message = "Received"
+	return nil
 }
 
 // Method the load balancer calls on the clients to update rpc addresses
 func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply) error {
-		NewRpcChatServer = args.ServerRpcAddress
-		reply.Message = ""
-		return nil
+	NewRpcChatServer = args.ServerRpcAddress
+	reply.Message = ""
+	return nil
 }
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
-	 var clientMessage ClientMessage
-	 clientMessage.UserName = args.UserName
-	 clientMessage.Message = args.Message
+	var clientMessage ClientMessage
+	clientMessage.UserName = args.UserName
+	clientMessage.Message = args.Message
 
-	 if (bufferCount < bufferMax) {
-	 		incomingMessageBuffer[bufferCount] = clientMessage
-	 		bufferCount++
- 		} else {
-			// reset buffer Count
-			bufferCount = 0
-			incomingMessageBuffer[bufferCount] = clientMessage
-		}
-		return nil
+	if bufferCount < bufferMax {
+		incomingMessageBuffer[bufferCount] = clientMessage
+		bufferCount++
+	} else {
+		// reset buffer Count
+		bufferCount = 0
+		incomingMessageBuffer[bufferCount] = clientMessage
+	}
+	return nil
 }
 
-func handleRpc(server net.Conn){
+func handleRpc(server net.Conn) {
 
 }
 
@@ -138,10 +142,10 @@ func main() {
 		os.Exit(1)
 	}
 
-		loadBalancer1 := os.Args[1]
-		loadBalancer2 := os.Args[2]
-		loadBalancer3 := os.Args[3]
-		loadBalancers = []string{loadBalancer1,loadBalancer2,loadBalancer3}
+	loadBalancer1 := os.Args[1]
+	loadBalancer2 := os.Args[2]
+	loadBalancer3 := os.Args[3]
+	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
 
 	incomingMessageBuffer = make([]ClientMessage, bufferMax)
 
@@ -149,16 +153,18 @@ func main() {
 	clientService := new(ClientMessageService)
 	rpc.Register(clientService)
 
+	ip := getIP()
 	// listen on first open port server finds
-	clientServer, err := net.Listen("tcp", ":0")
+	clientServer, err := net.Listen("tcp", ip+":0")
 	if err != nil {
 		fmt.Println("Client Server Error:", err)
 		return
 	}
 	defer clientServer.Close()
-
 	// Do something to advertise global rpc address
+	clientRpcAddress = clientServer.Addr().String()
 
+	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
 	// go routine to start rpc connection for client
 	go func() {
@@ -193,8 +199,9 @@ func clientSetup() {
 func startupChatConnection() {
 
 	// Welcome
-	fmt.Println("\n\n", editText("<----------------------- JustChat Signup ----------------------->", 33, 1), "\n\n")
-
+	fmt.Println()
+	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+	fmt.Println()
 	// eventually will be used in some loop
 	n := 0
 	// Connecting to a LoadBalancer
@@ -225,7 +232,7 @@ func startupChatConnection() {
 		// Logger.UnpackReceive("server message", _, serverMessage)
 
 		// Checking for welcome message
-		if serverMessage == "WELCOME"{
+		if serverMessage == "WELCOME" {
 			fmt.Println("\n\n", editText("<--------------------- Welcome to"+
 				" JustChat --------------------->", 35, 1))
 			username = uname
@@ -263,12 +270,16 @@ func getClientPassword() string {
 
 	// Reading input from user for username
 	pword := ""
-	reader := bufio.NewReader(os.Stdin)
 	for {
 
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
-		inputPword, _ := reader.ReadString('\n')
-		//uname = strings.TrimSpace(inputUsername)
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+
+		/*if err == nil {
+			fmt.Println("\nPassword typed: " + string(bytePassword))
+		}*/
+
+		inputPword := string(bytePassword)
 		pword = inputPword
 		if len(pword) > 3 {
 			break
@@ -324,6 +335,20 @@ func messageCommands() {
 
 }
 
+// get ip address of the host for client's server
+func getIP() (ip string) {
+
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil && !ipv4.IsLoopback() {
+			//fmt.Println("IPv4: ", ipv4.String())
+			ip = ipv4.String()
+		}
+	}
+	return ip
+}
+
 /* Function to edit output text color
 /* Foreground/Background colors
  *			3/40	Black
@@ -345,7 +370,7 @@ func editText(text string, color int, intensity int) string {
 // Function to handle runtime errors
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error ", err.Error())
+		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
 }
