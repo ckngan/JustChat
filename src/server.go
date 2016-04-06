@@ -24,7 +24,9 @@ type ClientItem struct {
 
 type ServerItem struct {
 	id string
-	address *net.Conn
+	address string
+	clients int
+	nextServer *ServerItem
 }
 
 // Message Format from client
@@ -47,6 +49,10 @@ type ServerReply struct {
 	Message string
 }
 
+type NodeListReply struct {
+	ListOfNodes *ServerItem
+}
+
 //Retrun to client
 type ClientReply struct {
 	Message string
@@ -61,7 +67,8 @@ type ChatServer struct {
 
 // Message from new Node
 type NewNodeSetup struct {
-	Message string
+	Id string
+	RPCAddress string
 }
 
 /*
@@ -88,10 +95,23 @@ func main() {
 	nodeConnAdress = os.Args[2]
 
 	
-	fmt.Print(GetLocalIP() + ":L \n")
+	////Print out address information
+	ip := GetLocalIP()
+	// listen on first open port server finds
+	clientServer, err := net.Listen("tcp", ip+":0")
+	if err != nil {
+		fmt.Println("Client Server Error:", err)
+		return
+	}
+	defer clientServer.Close()
+	ipV4 := clientServer.Addr().String()
+	fmt.Print("This machine's address: "+ ipV4 + "\n")
 
-	//Initialize Clientlist
+
+
+	//Initialize Clientlist and serverlist
 	clientList = nil
+	serverList = nil
 
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
@@ -152,16 +172,39 @@ func addClientToList(username string, password string) {
 	println("List of Clients")
 	println("---------------")
 	for toPrint != nil {
-		println((*toPrint).username)
+		fmt.Print((*toPrint).username)
 		toPrint = (*toPrint).nextClient
 	}
 
 	return
 }
 
-func getServerForCLient() (string, string) {
 
-	return "A", "B"
+//return selectedServer, error
+func getServerForCLient() (*ServerItem, error) {
+	//get the server with fewest clients connected to it
+	next := serverList
+
+	//block until at least one server on list ???
+
+	lowestNumberServer := serverList
+
+	//check to see if username exists
+	for next != nil {
+		if (next.clients > (*next).nextServer.clients){
+			lowestNumberServer = (*next).nextServer
+		}
+
+		next = (*next).nextServer
+	}
+
+	lowestNumberServer.clients ++
+
+	if (lowestNumberServer != nil){
+		return lowestNumberServer, nil
+	} else {
+		return nil, errors.New("No Connected Servers")
+	}
 }
 
 func authenticateFailure(username string, password string) bool {
@@ -186,13 +229,31 @@ func authenticateFailure(username string, password string) bool {
 	return false
 }
 
+func addNode(ident string, address string) {
+
+	newNode := &ServerItem{ident, address, 0, nil}
+
+	if serverList == nil {
+		serverList = newNode
+	} else {
+		newNode.nextServer = serverList
+		serverList = newNode
+	}
+
+	return
+}
+
 
 
 /* 
 	RPC METHODS FOR NODES
 
 */
-func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) error {
+func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
+	//add node to list
+	addNode(message.Id, message.RPCAddress)
+
+	reply.ListOfNodes = serverList
 
 	return nil
 }
@@ -232,11 +293,13 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		//Dial and update the cient with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
-
 		selectedServer, selectionError := getServerForCLient();
+		if (selectionError != nil) {
+			println(selectionError)
+		}
 
 		println(selectedServer)
-		println(selectionError)
+		
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
