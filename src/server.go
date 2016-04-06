@@ -22,6 +22,11 @@ type ClientItem struct {
 	nextClient *ClientItem
 }
 
+type ServerItem struct {
+	id string
+	address *net.Conn
+}
+
 // Message Format from client
 type ClientMessage struct {
 	UserName   string
@@ -53,6 +58,12 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
+
+// Message from new Node
+type NewNodeSetup struct {
+	Message string
+}
+
 /*
 	----GLOBAL VARIABLES----
 */
@@ -62,6 +73,7 @@ var nodeConnAdress string
 
 //List of clients
 var clientList *ClientItem
+var serverList *ServerItem
 
 func main() {
 
@@ -74,6 +86,9 @@ func main() {
 
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
+
+	
+	fmt.Print(GetLocalIP() + ":L \n")
 
 	//Initialize Clientlist
 	clientList = nil
@@ -144,6 +159,11 @@ func addClientToList(username string, password string) {
 	return
 }
 
+func getServerForCLient() (string, string) {
+
+	return "A", "B"
+}
+
 func authenticateFailure(username string, password string) bool {
 	next := clientList
 
@@ -160,18 +180,22 @@ func authenticateFailure(username string, password string) bool {
 		next = (*next).nextClient
 	}
 
+	//if username doesnt exist, add to list
+	addClientToList(username, password)
+
 	return false
 }
 
-func sendToAllClients(from string, message string) {
 
-}
 
 /* 
 	RPC METHODS FOR NODES
 
 */
-func (nodeSvc *NodeService) DoSomething(message)
+func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) error {
+
+	return nil
+}
 
 
 /*
@@ -209,6 +233,11 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
 
+		selectedServer, selectionError := getServerForCLient();
+
+		println(selectedServer)
+		println(selectionError)
+
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
@@ -222,6 +251,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	return nil
 }
 
+
 /*
 	CHECK for ERRORS
 
@@ -231,4 +261,22 @@ func checkError(err error) {
 		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
+}
+
+/* Get local IP */
+// GetLocalIP returns the non loopback local IP of the host
+func GetLocalIP() string {
+    addrs, err := net.InterfaceAddrs()
+    if err != nil {
+        return ""
+    }
+    for _, address := range addrs {
+        // check the address type and if it is not a loopback the display it
+        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            if ipnet.IP.To4() != nil {
+                return ipnet.IP.String()
+            }
+        }
+    }
+    return ""
 }
