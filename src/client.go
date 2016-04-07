@@ -216,7 +216,7 @@ func main() {
 	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
 	// Create log
-	Logger = govec.InitializeMutipleExecutions(clientRpcAddress, "sys")
+	Logger = govec.InitializeMutipleExecutions("client " + clientRpcAddress, "sys")
 
 	// go routine to start rpc connection for client
 	go func() {
@@ -284,7 +284,6 @@ func startupChatConnection() {
 
 		err := loadBalancer.Call("MessageService.JoinChatService", message, &reply)
 		checkError(err)
-		Logger.LogLocalEvent("joined chat service")
 
 		serverMessage := reply.Message
 		Logger.LogLocalEvent("received message from server")
