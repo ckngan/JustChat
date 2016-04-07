@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/arcaneiceman/GoVector/govec"
@@ -27,18 +28,11 @@ type ClientItem struct {
 }
 
 type ServerItem struct {
-	id         string
-	address    string
-	clients    int
-	nextServer *ServerItem
-}
-
-// Message Format from client
-type ClientMessage struct {
-	UserName   string
-	Message    string
-	Password   string
-	RpcAddress string
+	UDP_IPPORT string
+	RPC_SERVER_IPPORT string
+	RPC_CLIENT_IPPORT string
+	Clients    int
+	NextServer *ServerItem
 }
 
 // Struct to join chat service
@@ -68,10 +62,11 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
-// Message from new Node
+//NewStorageNode Args
 type NewNodeSetup struct {
-	Id         string
-	RPCAddress string
+	RPC_CLIENT_IPPORT string
+	RPC_SERVER_IPPORT string
+	UDP_IPPORT        string
 }
 
 //reply from node with message
@@ -85,13 +80,21 @@ type NodeReply struct {
 //Net Info of this server
 var clientConnAddress string
 var nodeConnAdress string
+var lbDesignation int
+
+//List of All LoadBalance Servers
+var LBServers []string
 
 //List of clients
 var clientList *ClientItem
 var serverList *ServerItem
 
+//List of locks
 var mutexForAddingNodes sync.Mutex
 var addingCond *sync.Cond
+
+var mutexForAddingClients sync.Mutex
+var clientSync *sync.Cond
 
 // GoVector log
 var Logger *govec.GoLog
@@ -99,14 +102,18 @@ var Logger *govec.GoLog
 func main() {
 
 	// Parse arguments
-	usage := fmt.Sprintf("Usage: %s [client ip:port] [server ip:port] \n", os.Args[0])
-	if len(os.Args) != 3 {
+	usage := fmt.Sprintf("Usage: %s [client ip:port] [server ip:port] [designation ( 0 | 1 | 2 )] \n", os.Args[0])
+	if len(os.Args) != 4 {
 		fmt.Printf(usage)
 		os.Exit(1)
 	}
 
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
+	desTmp := os.Args[3]
+	lbDesignation, _ = strconv.Atoi(desTmp)
+
+	LBServers = []string{":10001", ":10002", ":10003"}
 
 	////Print out address information
 	ip := GetLocalIP()
@@ -119,14 +126,18 @@ func main() {
 	defer clientServer.Close()
 
 	ipV4 := clientServer.Addr().String()
-	fmt.Print("This machine's address: "+ ipV4 + "\n")
+	fmt.Print("This machine's address: " + ipV4 + "\n")
 
 	// Create log
-	Logger = govec.InitializeMutipleExecutions("lb " + ipV4, "sys")
+	Logger = govec.InitializeMutipleExecutions("lb "+ipV4, "sys")
 	Logger.LogThis("LB was initialized", "lb " + ipV4, "{\"lb " + ipV4 + "\":1}")
 
+	//Locks
 	mutexForAddingNodes = sync.Mutex{}
 	addingCond = sync.NewCond(&mutexForAddingNodes)
+
+	mutexForAddingClients = sync.Mutex{}
+	clientSync = sync.NewCond(&mutexForAddingClients)
 
 	//Initialize Clientlist and serverlist
 	clientList = nil
@@ -141,6 +152,7 @@ func main() {
 		log.Fatal("listen error:", err)
 	}
 
+	//Listener go function for clients
 	go func() {
 		for {
 			println("Waiting for Client Calls")
@@ -151,6 +163,20 @@ func main() {
 			go rpc.ServeConn(clientConnection)
 			Logger.LogLocalEvent("rpc client connection started")
 			println("Accepted Call from " + clientConnection.RemoteAddr().String())
+		}
+	}()
+
+	//Listener go function for other load balancers
+	lBListener, _ := net.Listen("tcp", LBServers[lbDesignation])
+	go func() {
+		for {
+			loadBalanceConnection, err := lBListener.Accept()
+			if err != nil {
+				log.Fatal("LoadBalancer Connection error: ", err)
+			}
+
+			go rpc.ServeConn(loadBalanceConnection)
+			println("Accepted LoadBalancer Call from: " + loadBalanceConnection.RemoteAddr().String())
 		}
 	}()
 
@@ -204,9 +230,8 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	//TODO: block until at least one server on list ???
-
 	addingCond.L.Lock()
+
 	for serverList == nil {
 		addingCond.Wait()
 	}
@@ -215,11 +240,11 @@ func getServerForCLient() (*ServerItem, error) {
 
 	//check to see if username exists
 	for next != nil {
-		if next.clients > (*next).nextServer.clients {
-			lowestNumberServer = (*next).nextServer
+		if next.Clients > (*next).NextServer.Clients {
+			lowestNumberServer = (*next).NextServer
 		}
 
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
 
 	addingCond.L.Unlock()
@@ -232,6 +257,7 @@ func getServerForCLient() (*ServerItem, error) {
 }
 
 func authenticationFailure(username string, password string) bool {
+
 	next := clientList
 
 	//check to see if username exists
@@ -253,18 +279,18 @@ func authenticationFailure(username string, password string) bool {
 	return false
 }
 
-func addNode(ident string, address string) {
+func addNode(udp string, clientRPC string, serverRPC string) {
 
 	//TODO: need restart implementation
 
 	addingCond.L.Lock()
 
-	newNode := &ServerItem{ident, address, 0, nil}
+	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
 
 	if serverList == nil {
 		serverList = newNode
 	} else {
-		newNode.nextServer = serverList
+		newNode.NextServer = serverList
 		serverList = newNode
 	}
 
@@ -278,10 +304,10 @@ func isNewNode(ident string) bool {
 	next := serverList
 
 	for next != nil {
-		if (*next).id == ident {
+		if (*next).UDP_IPPORT == ident {
 			return false
 		}
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
 
 	return true
@@ -295,9 +321,11 @@ func isNewNode(ident string) bool {
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
 
-	if isNewNode(message.Id) {
-		addNode(message.Id, message.RPCAddress)
+    println("A new node is trying to connect", message.UDP_IPPORT)
+	if isNewNode(message.UDP_IPPORT) {
+		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT)
 	}
+
 
 	reply.ListOfNodes = serverList
 

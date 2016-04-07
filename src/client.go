@@ -20,7 +20,6 @@ import (
 type ClientMessage struct {
 	UserName string
 	Message  string
-	Password string
 }
 
 // Struct to join chat service
@@ -42,6 +41,13 @@ type FileData struct {
 	FileName string
 	FileSize int64
 	Data     []byte
+}
+
+// Struct for client information
+type ClientRequest struct {
+	UserName          string // client making the request for the username
+	RequestedUsername string // return the rpc address of this client
+	RpcAddress        string // RpcAddress of the client making the request
 }
 
 //Retrun to client
@@ -382,22 +388,90 @@ func getMessage() string {
 	return message
 }
 
-// method to return rpc method to call
-func filterMessage(msg string) string {
-	return ""
-}
-
 // Method to handle all chat input from client
 func chat() {
 	for {
 		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
-		var reply ServerReply
+
 		message := getMessage()
-		filterMessage(message)
-		err2 := chatServer.Call("MessageService.SendPublicMessage", message, &reply)
-		checkError(err2)
+		messageArr := strings.Split(message, "#")
+		filterAndSendMessage(messageArr)
 	}
+}
+
+// method to return rpc method to call
+func filterAndSendMessage(msg []string) {
+
+	var reply ServerReply
+	var sendMsg ClientMessage
+
+	command := msg[0]
+	if len(msg) == 0 {
+		sendMsg.Message = command
+		sendMsg.UserName = username
+		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
+		checkError(err)
+		// do something with reply
+	} else if len(msg) == 2 {
+		if command == "share" {
+			sendPublicFile(msg[1])
+		} else {
+			fmt.Println("Incorrect command!!!!!")
+			messageCommands()
+			return
+		}
+	} else if len(msg) == 3 {
+		if command == "share" {
+			sendPrivateFile(msg[1], msg[2])
+		} else if command == "message" {
+			sendPrivateMessage(msg[1], msg[2])
+		} else {
+			fmt.Println("Incorrect command!!!!!")
+			messageCommands()
+			return
+		}
+	} else {
+		fmt.Println("Incorrect command!!!!!")
+		messageCommands()
+		return
+	}
+	return
+}
+
+// err := chatServer.Call("MessageService.SendPublicFile", sendMsg, &reply)
+// method to send public file
+func sendPublicFile(filepath string) {
+	var reply ServerReply
+	var fileData FileData
+	filepathArr := strings.Split(filepath, "/")
+	filename := filepathArr[len(filepathArr)-1]
+
+	r, err := os.Open(filepath)
+	if err != nil {
+		panic(err)
+	}
+	fis, _ := r.Stat()
+	fileData.FileSize = fis.Size()
+	fileData.FileName = filename
+	fileData.Data = make([]byte, fileData.FileSize)
+
+	_, _ = r.Write(fileData.Data)
+	err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
+	checkError(err)
+	r.Close()
+
+	return
+}
+
+// method to send private file
+func sendPrivateFile(user string, filepath string) {
+	return
+}
+
+// method to send private message
+func sendPrivateMessage(user string, message string) {
+	return
 }
 
 // Method for user to accept or decline file transfers
@@ -457,19 +531,27 @@ func messageCommands() {
 	color1 := 41
 	color2 := 33
 
+	// 3 strings (message in first)
 	privateMessage1 := editText("Private Message", color1, 1)
-	message1 := editText("#username #some_message", color2, 2)
+	message1 := editText("#message #username #some_message", color2, 2)
 
+	// 3 strings (share in first)
 	privateMessage2 := editText("Private File", color1, 1)
 	message2 := editText("#share #username #/path/to/file/name", color2, 2)
 
+	// 2 strings (share in first)
 	publicMessage1 := editText("Public File", color1, 1)
 	message3 := editText("#share #/path/to/file/name", color2, 2)
+
+	// 1 string (share in first)
+	commands := editText("Commands", color1, 1)
+	message4 := editText("#commands", color2, 2)
 
 	fmt.Printf(editText("<----------------------- JustChat Commands ----------------------->\n", color2, 1))
 	fmt.Printf("%s ==> %2s\n", privateMessage1, message1)
 	fmt.Printf("   %s ==> %2s\n", privateMessage2, message2)
 	fmt.Printf("    %s ==> %2s\n", publicMessage1, message3)
+	fmt.Printf("    %s ==> %2s\n", commands, message4)
 	fmt.Printf(editText("<----------------------------------------------------------------->\n\n", color2, 1))
 	fmt.Printf(editText("<--------------------------Start Chatting------------------------->\n", 35, 1))
 
