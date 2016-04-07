@@ -31,14 +31,6 @@ type ServerItem struct {
 	nextServer *ServerItem
 }
 
-// Message Format from client
-type ClientMessage struct {
-	UserName   string
-	Message    string
-	Password   string
-	RpcAddress string
-}
-
 // Struct to join chat service
 type NewClientSetup struct {
 	UserName   string
