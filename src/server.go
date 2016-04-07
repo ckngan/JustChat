@@ -8,6 +8,8 @@ import (
 	"os"
 	"errors"
 	"sync"
+
+	"github.com/arcaneiceman/GoVector/govec"
 )
 
 /*
@@ -92,6 +94,9 @@ var serverList *ServerItem
 var mutexForAddingNodes sync.Mutex
 var addingCond *sync.Cond
 
+// GoVector log
+var Logger *govec.GoLog
+
 func main() {
 
 	// Parse arguments
@@ -104,7 +109,6 @@ func main() {
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
 
-	
 	////Print out address information
 	ip := GetLocalIP()
 	// listen on first open port server finds
@@ -114,17 +118,15 @@ func main() {
 		return
 	}
 	defer clientServer.Close()
+
 	ipV4 := clientServer.Addr().String()
 	fmt.Print("This machine's address: "+ ipV4 + "\n")
 
-
+	// Create log
+	Logger = govec.InitializeMutipleExecutions("lb " + ipV4, "sys")
 
 	mutexForAddingNodes = sync.Mutex{}
 	addingCond = sync.NewCond(&mutexForAddingNodes)
-
-	
-
-
 
 	//Initialize Clientlist and serverlist
 	clientList = nil
@@ -147,6 +149,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(clientConnection)
+			Logger.LogLocalEvent("rpc client connection started")
 			println("Accepted Call from " + clientConnection.RemoteAddr().String())
 		}
 	}()
@@ -196,7 +199,6 @@ func addClientToList(username string, password string) {
 	return
 }
 
-
 //return selectedServer, error
 func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
@@ -209,8 +211,6 @@ func getServerForCLient() (*ServerItem, error) {
 		addingCond.Wait()
 	}
 
-
-
 	lowestNumberServer := serverList
 
 	//check to see if username exists
@@ -222,9 +222,7 @@ func getServerForCLient() (*ServerItem, error) {
 		next = (*next).nextServer
 	}
 
-
 	addingCond.L.Unlock()
-
 
 	if (lowestNumberServer != nil){
 		return lowestNumberServer, nil
@@ -233,7 +231,7 @@ func getServerForCLient() (*ServerItem, error) {
 	}
 }
 
-func authenticateFailure(username string, password string) bool {
+func authenticationFailure(username string, password string) bool {
 	next := clientList
 
 	//check to see if username exists
@@ -257,7 +255,7 @@ func authenticateFailure(username string, password string) bool {
 
 func addNode(ident string, address string) {
 
-	//TODO: need restart implenentation
+	//TODO: need restart implementation
 
 	addingCond.L.Lock()
 
@@ -289,11 +287,8 @@ func isNewNode(ident string) bool {
 	return true
 }
 
-
-
 /* 
 	RPC METHODS FOR NODES
-
 */
 
 //Function a node will call when it comes online
@@ -306,13 +301,13 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	reply.ListOfNodes = serverList
 
+	Logger.LogLocalEvent("new storage node online")
+
 	return nil
 }
 
-
 /*
 	RPC METHODS FOR CLIENTS
-
 */
 
 //Function for receiving a message from a client
@@ -323,13 +318,11 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	// unless there is error dialing RPC to client then replies DIAL-ERROR
 	// otherwise, server replies, USERNAME-TAKEN
 
-	//check username
-	//if taken reply username taken
-	if authenticateFailure(message.UserName, message.Password) {
-
+	//check username, if taken reply username taken
+	if authenticationFailure(message.UserName, message.Password) {
 		reply.Message = "USERNAME-TAKEN"
-
 		//else dial rpc
+
 	} else {
 
 		clientConn, err := rpc.Dial("tcp", message.RpcAddress)
@@ -341,34 +334,32 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		var clientReply ClientReply
 		var rpcUpdateMessage ChatServer
 
-		//Dial and update the cient with their server address
+		//Dial and update the client with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
 		selectedServer, selectionError := getServerForCLient();
+
 		if (selectionError != nil) {
 			println(selectionError.Error())
 		}
 
 		println(selectedServer)
 		
-
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
 			return nil
 		}
 
+		Logger.LogLocalEvent("client joined chat service successful")
 		reply.Message = "WELCOME"
-
 	}
 
 	return nil
 }
 
-
 /*
 	CHECK for ERRORS
-
 */
 func checkError(err error) {
 	if err != nil {
@@ -394,8 +385,6 @@ func GetLocalIP() string {
     }
     return ""
 }
-
-
 
 //Error creation, etc.
 /*
