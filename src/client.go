@@ -192,11 +192,7 @@ func main() {
 	incomingMessageBuffer = make([]ClientMessage, bufferMax)
 	messageChannel = make(chan string, bufferMax)
 
-<<<<<<< HEAD
-	// Registering RPC service
-=======
 	// Registering RPC service for client's server
->>>>>>> 765fc5d6f3ac0000db51407f7a88ad1a38cf761a
 	clientService := new(ClientMessageService)
 	rpc.Register(clientService)
 
@@ -207,12 +203,7 @@ func main() {
 		fmt.Println("Client Server Error:", err)
 		return
 	}
-<<<<<<< HEAD
-	defer clientServer.Close()
-	
-=======
 
->>>>>>> 765fc5d6f3ac0000db51407f7a88ad1a38cf761a
 	// Do something to advertise global rpc address
 	clientRpcAddress = clientServer.Addr().String()
 
@@ -333,11 +324,11 @@ func getClientPassword() string {
 	pword := ""
 	for {
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
-		bytePassword, _ := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-			checkError(err)
+			// checkError(err)
 		}
 
 		inputPword := string(bytePassword)
