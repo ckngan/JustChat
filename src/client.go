@@ -87,7 +87,8 @@ var messageChannel chan string
 // Load Balancer connection
 var loadBalancer *rpc.Client
 
-var Logger = govec.Initialize("client", "client")
+// GoVector log
+var Logger *govec.GoLog
 
 //RPC Value for receiving messages
 type ClientMessageService int
@@ -96,6 +97,7 @@ type ClientMessageService int
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply) error {
 
 	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
+	Logger.LogLocalEvent("received file transfer")
 	return nil
 }
 
@@ -115,6 +117,8 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Clie
 func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply) error {
 	NewRpcChatServer = args.ServerRpcAddress
 	reply.Message = ""
+	Logger.LogLocalEvent("rpc chat server updated")
+
 	// make the rpc call to the server as it's updated
 	attempts := 0
 	for {
@@ -140,6 +144,7 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Clie
 	messageBody := editText(args.Message, 33, 1)
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
+	Logger.LogLocalEvent("client received global message")
 
 	reply.Message = ""
 	return nil
@@ -164,6 +169,7 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 	messageBody := editText(args.Message, 33, 1)
 	output := privateFlag + messageOwner + ": " + messageBody
 	messageChannel <- output
+	Logger.LogLocalEvent("client received private message")
 
 	reply.Message = ""
 	return nil
@@ -203,6 +209,9 @@ func main() {
 
 	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
+	// Create log
+	Logger = govec.InitializeMutipleExecutions(clientRpcAddress, "sys")
+
 	// go routine to start rpc connection for client
 	go func() {
 		for {
@@ -212,6 +221,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(conn)
+			Logger.LogLocalEvent("rpc connection started")
 			// Accept call from loadbalancer/server/client
 		}
 	}()
@@ -250,6 +260,7 @@ func startupChatConnection() {
 	// Connecting to a LoadBalancer
 	conn, err := rpc.Dial("tcp", loadBalancers[n])
 	checkError(err)
+	Logger.LogLocalEvent("connected to a loadBalancer")
 
 	// initializing rpc load balancer
 	loadBalancer = conn
@@ -261,18 +272,16 @@ func startupChatConnection() {
 		// read user username and send to chat server
 		uname := getClientUsername()
 		pword := getClientPassword()
-		//outgoing := Logger.PrepareSend("send username to chat server", []byte(uname + "\n"))
-		//conn.Write(outgoing)
 		message.UserName = uname
 		message.Password = pword
 		message.RpcAddress = clientRpcAddress
 
 		err := loadBalancer.Call("MessageService.JoinChatService", message, &reply)
 		checkError(err)
+		Logger.LogLocalEvent("joined chat service")
 
 		serverMessage := reply.Message
-
-		// Logger.UnpackReceive("server message", _, serverMessage)
+		Logger.LogLocalEvent("received message from server")
 
 		// Checking for welcome message
 		if serverMessage == "WELCOME" {
@@ -294,11 +303,11 @@ func getClientUsername() string {
 	uname := ""
 	reader := bufio.NewReader(os.Stdin)
 	for {
-
 		fmt.Print(editText("Please enter your username:", 44, 1), " ")
 		inputUsername, _ := reader.ReadString('\n')
 		//uname = strings.TrimSpace(inputUsername)
 		uname = inputUsername
+
 		if len(uname) > 0 {
 			break
 		} else {
@@ -314,13 +323,12 @@ func getClientPassword() string {
 	// Reading input from user for username
 	pword := ""
 	for {
-
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-			//checkError(err)
+			// checkError(err)
 		}
 		fmt.Println()
 		inputPword := string(bytePassword)
