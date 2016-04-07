@@ -22,6 +22,13 @@ type ClientItem struct {
 	nextClient *ClientItem
 }
 
+type ServerItem struct {
+	id string
+	address string
+	clients int
+	nextServer *ServerItem
+}
+
 // Message Format from client
 type ClientMessage struct {
 	UserName   string
@@ -42,6 +49,10 @@ type ServerReply struct {
 	Message string
 }
 
+type NodeListReply struct {
+	ListOfNodes *ServerItem
+}
+
 //Retrun to client
 type ClientReply struct {
 	Message string
@@ -53,6 +64,13 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
+
+// Message from new Node
+type NewNodeSetup struct {
+	Id string
+	RPCAddress string
+}
+
 /*
 	----GLOBAL VARIABLES----
 */
@@ -62,6 +80,7 @@ var nodeConnAdress string
 
 //List of clients
 var clientList *ClientItem
+var serverList *ServerItem
 
 func main() {
 
@@ -75,8 +94,24 @@ func main() {
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
 
-	//Initialize Clientlist
+	
+	////Print out address information
+	ip := GetLocalIP()
+	// listen on first open port server finds
+	clientServer, err := net.Listen("tcp", ip+":0")
+	if err != nil {
+		fmt.Println("Client Server Error:", err)
+		return
+	}
+	defer clientServer.Close()
+	ipV4 := clientServer.Addr().String()
+	fmt.Print("This machine's address: "+ ipV4 + "\n")
+
+
+
+	//Initialize Clientlist and serverlist
 	clientList = nil
+	serverList = nil
 
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
@@ -137,11 +172,39 @@ func addClientToList(username string, password string) {
 	println("List of Clients")
 	println("---------------")
 	for toPrint != nil {
-		println((*toPrint).username)
+		fmt.Print((*toPrint).username)
 		toPrint = (*toPrint).nextClient
 	}
 
 	return
+}
+
+
+//return selectedServer, error
+func getServerForCLient() (*ServerItem, error) {
+	//get the server with fewest clients connected to it
+	next := serverList
+
+	//block until at least one server on list ???
+
+	lowestNumberServer := serverList
+
+	//check to see if username exists
+	for next != nil {
+		if (next.clients > (*next).nextServer.clients){
+			lowestNumberServer = (*next).nextServer
+		}
+
+		next = (*next).nextServer
+	}
+
+	lowestNumberServer.clients ++
+
+	if (lowestNumberServer != nil){
+		return lowestNumberServer, nil
+	} else {
+		return nil, errors.New("No Connected Servers")
+	}
 }
 
 func authenticateFailure(username string, password string) bool {
@@ -160,12 +223,41 @@ func authenticateFailure(username string, password string) bool {
 		next = (*next).nextClient
 	}
 
+	//if username doesnt exist, add to list
+	addClientToList(username, password)
+
 	return false
 }
 
-func sendToAllClients(from string, message string) {
+func addNode(ident string, address string) {
 
+	newNode := &ServerItem{ident, address, 0, nil}
+
+	if serverList == nil {
+		serverList = newNode
+	} else {
+		newNode.nextServer = serverList
+		serverList = newNode
+	}
+
+	return
 }
+
+
+
+/* 
+	RPC METHODS FOR NODES
+
+*/
+func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
+	//add node to list
+	addNode(message.Id, message.RPCAddress)
+
+	reply.ListOfNodes = serverList
+
+	return nil
+}
+
 
 /*
 	RPC METHODS FOR CLIENTS
@@ -201,6 +293,13 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		//Dial and update the cient with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
+		selectedServer, selectionError := getServerForCLient();
+		if (selectionError != nil) {
+			println(selectionError)
+		}
+
+		println(selectedServer)
+		
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
@@ -215,6 +314,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	return nil
 }
 
+
 /*
 	CHECK for ERRORS
 
@@ -224,4 +324,22 @@ func checkError(err error) {
 		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
+}
+
+/* Get local IP */
+// GetLocalIP returns the non loopback local IP of the host
+func GetLocalIP() string {
+    addrs, err := net.InterfaceAddrs()
+    if err != nil {
+        return ""
+    }
+    for _, address := range addrs {
+        // check the address type and if it is not a loopback the display it
+        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+            if ipnet.IP.To4() != nil {
+                return ipnet.IP.String()
+            }
+        }
+    }
+    return ""
 }
