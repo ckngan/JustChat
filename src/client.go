@@ -316,7 +316,7 @@ func getClientPassword() string {
 	for {
 
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
-		bytePassword, _ := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
