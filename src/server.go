@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"errors"
+	"sync"
 )
 
 /*
@@ -24,7 +26,9 @@ type ClientItem struct {
 
 type ServerItem struct {
 	id string
-	address *net.Conn
+	address string
+	clients int
+	nextServer *ServerItem
 }
 
 // Message Format from client
@@ -47,6 +51,10 @@ type ServerReply struct {
 	Message string
 }
 
+type NodeListReply struct {
+	ListOfNodes *ServerItem
+}
+
 //Retrun to client
 type ClientReply struct {
 	Message string
@@ -61,6 +69,12 @@ type ChatServer struct {
 
 // Message from new Node
 type NewNodeSetup struct {
+	Id string
+	RPCAddress string
+}
+
+//reply from node with message
+type NodeReply struct {
 	Message string
 }
 
@@ -75,6 +89,9 @@ var nodeConnAdress string
 var clientList *ClientItem
 var serverList *ServerItem
 
+var mutexForAddingNodes sync.Mutex
+var addingCond *sync.Cond
+
 func main() {
 
 	// Parse arguments
@@ -88,10 +105,30 @@ func main() {
 	nodeConnAdress = os.Args[2]
 
 	
-	fmt.Print(GetLocalIP() + ":L \n")
+	////Print out address information
+	ip := GetLocalIP()
+	// listen on first open port server finds
+	clientServer, err := net.Listen("tcp", ip+":0")
+	if err != nil {
+		fmt.Println("Client Server Error:", err)
+		return
+	}
+	defer clientServer.Close()
+	ipV4 := clientServer.Addr().String()
+	fmt.Print("This machine's address: "+ ipV4 + "\n")
 
-	//Initialize Clientlist
+
+
+	mutexForAddingNodes = sync.Mutex{}
+	addingCond = sync.NewCond(&mutexForAddingNodes)
+
+	
+
+
+
+	//Initialize Clientlist and serverlist
 	clientList = nil
+	serverList = nil
 
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
@@ -152,16 +189,48 @@ func addClientToList(username string, password string) {
 	println("List of Clients")
 	println("---------------")
 	for toPrint != nil {
-		println((*toPrint).username)
+		fmt.Print((*toPrint).username)
 		toPrint = (*toPrint).nextClient
 	}
 
 	return
 }
 
-func getServerForCLient() (string, string) {
 
-	return "A", "B"
+//return selectedServer, error
+func getServerForCLient() (*ServerItem, error) {
+	//get the server with fewest clients connected to it
+	next := serverList
+
+	//TODO: block until at least one server on list ???
+
+	addingCond.L.Lock()
+	for (serverList == nil){
+		addingCond.Wait()
+	}
+
+
+
+	lowestNumberServer := serverList
+
+	//check to see if username exists
+	for next != nil {
+		if (next.clients > (*next).nextServer.clients){
+			lowestNumberServer = (*next).nextServer
+		}
+
+		next = (*next).nextServer
+	}
+
+
+	addingCond.L.Unlock()
+
+
+	if (lowestNumberServer != nil){
+		return lowestNumberServer, nil
+	} else {
+		return nil, errors.New("No Connected Servers")
+	}
 }
 
 func authenticateFailure(username string, password string) bool {
@@ -186,13 +255,56 @@ func authenticateFailure(username string, password string) bool {
 	return false
 }
 
+func addNode(ident string, address string) {
+
+	//TODO: need restart implenentation
+
+	addingCond.L.Lock()
+
+	newNode := &ServerItem{ident, address, 0, nil}
+
+	if serverList == nil {
+		serverList = newNode
+	} else {
+		newNode.nextServer = serverList
+		serverList = newNode
+	}
+
+	addingCond.L.Unlock()
+	addingCond.Signal()
+
+	return
+}
+
+func isNewNode(ident string) bool {
+	next := serverList 
+
+	for next != nil {
+		if (*next).id == ident {
+			return false
+		}
+		next = (*next).nextServer
+	}
+
+	return true
+}
+
 
 
 /* 
 	RPC METHODS FOR NODES
 
 */
-func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) error {
+
+//Function a node will call when it comes online
+func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
+	//add node to list on connection
+
+	if (isNewNode(message.Id)){
+		addNode(message.Id, message.RPCAddress)
+	}
+
+	reply.ListOfNodes = serverList
 
 	return nil
 }
@@ -232,11 +344,13 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		//Dial and update the cient with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
-
 		selectedServer, selectionError := getServerForCLient();
+		if (selectionError != nil) {
+			println(selectionError.Error())
+		}
 
 		println(selectedServer)
-		println(selectionError)
+		
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
@@ -280,3 +394,23 @@ func GetLocalIP() string {
     }
     return ""
 }
+
+
+
+//Error creation, etc.
+/*
+type error interface {
+    Error() string
+}
+type errorString struct {
+    s string
+}
+
+func (e *errorString) Error() string {
+    return e.s
+}
+
+func New(text string) error {
+    return &errorString{text}
+}
+*/
