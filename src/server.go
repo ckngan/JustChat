@@ -1,14 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
-	"errors"
 	"sync"
 	"strconv"
+
+	"github.com/arcaneiceman/GoVector/govec"
 )
 
 /*
@@ -26,10 +28,10 @@ type ClientItem struct {
 }
 
 type ServerItem struct {
-	id string
-	address string
-	clients int
-	nextServer *ServerItem
+	Id         string
+	Address    string
+	Clients    int
+	NextServer *ServerItem
 }
 
 // Message Format from client
@@ -68,12 +70,13 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
-
-// Message from new Node
+//NewStorageNode Args
 type NewNodeSetup struct {
-	Id string
-	RPCAddress string
+	RPC_CLIENT_IPPORT string
+	RPC_SERVER_IPPORT string
+	UDP_IPPORT string
 }
+
 
 //reply from node with message
 type NodeReply struct {
@@ -99,8 +102,12 @@ var serverList *ServerItem
 var mutexForAddingNodes sync.Mutex
 var addingCond *sync.Cond
 
+
 var mutexForAddingClients sync.Mutex
 var clientSync *sync.Cond
+
+// GoVector log
+var Logger *govec.GoLog
 
 func main() {
 
@@ -127,19 +134,21 @@ func main() {
 		return
 	}
 	defer clientServer.Close()
+
 	ipV4 := clientServer.Addr().String()
 	fmt.Print("This machine's address: "+ ipV4 + "\n")
 
-
+	// Create log
+	Logger = govec.InitializeMutipleExecutions("lb " + ipV4, "sys")
 
 
 	//Locks
 	mutexForAddingNodes = sync.Mutex{}
 	addingCond = sync.NewCond(&mutexForAddingNodes)
 
+
 	mutexForAddingClients = sync.Mutex{}
 	clientSync = sync.NewCond(&mutexForAddingClients)
-
 
 
 	//Initialize Clientlist and serverlist
@@ -165,6 +174,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(clientConnection)
+			Logger.LogLocalEvent("rpc client connection started")
 			println("Accepted Call from " + clientConnection.RemoteAddr().String())
 		}
 	}()
@@ -228,7 +238,6 @@ func addClientToList(username string, password string) {
 	return
 }
 
-
 //return selectedServer, error
 func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
@@ -237,29 +246,25 @@ func getServerForCLient() (*ServerItem, error) {
 	
 
 	addingCond.L.Lock()
-	for (serverList == nil){
 
+	for serverList == nil {
 		addingCond.Wait()
 	}
-
-
 
 	lowestNumberServer := serverList
 
 	//check to see if username exists
 	for next != nil {
-		if (next.clients > (*next).nextServer.clients){
-			lowestNumberServer = (*next).nextServer
+		if next.Clients > (*next).NextServer.Clients {
+			lowestNumberServer = (*next).NextServer
 		}
 
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
-
 
 	addingCond.L.Unlock()
 
-
-	if (lowestNumberServer != nil){
+	if lowestNumberServer != nil {
 		return lowestNumberServer, nil
 	} else {
 		return nil, errors.New("No Connected Servers")
@@ -267,8 +272,8 @@ func getServerForCLient() (*ServerItem, error) {
 }
 
 
+func authenticationFailure(username string, password string) bool {
 
-func authenticateFailure(username string, password string) bool {
 	next := clientList
 
 	//check to see if username exists
@@ -292,7 +297,8 @@ func authenticateFailure(username string, password string) bool {
 
 func addNode(ident string, address string) {
 
-	
+	//TODO: need restart implementation
+
 	addingCond.L.Lock()
 
 	newNode := &ServerItem{ident, address, 0, nil}
@@ -300,7 +306,7 @@ func addNode(ident string, address string) {
 	if serverList == nil {
 		serverList = newNode
 	} else {
-		newNode.nextServer = serverList
+		newNode.NextServer = serverList
 		serverList = newNode
 	}
 
@@ -311,42 +317,39 @@ func addNode(ident string, address string) {
 }
 
 func isNewNode(ident string) bool {
-	next := serverList 
+	next := serverList
 
 	for next != nil {
-		if (*next).id == ident {
+		if (*next).Id == ident {
 			return false
 		}
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
 
 	return true
 }
 
-
-
-/* 
+/*
 	RPC METHODS FOR NODES
-
 */
 
 //Function a node will call when it comes online
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
-
-	if (isNewNode(message.Id)){
+    println("A new node is trying to connect")
+	/*if isNewNode(message.Id) {
 		addNode(message.Id, message.RPCAddress)
-	}
+	}*/
 
 	reply.ListOfNodes = serverList
+
+	Logger.LogLocalEvent("new storage node online")
 
 	return nil
 }
 
-
 /*
 	RPC METHODS FOR CLIENTS
-
 */
 
 //Function for receiving a message from a client
@@ -357,13 +360,11 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	// unless there is error dialing RPC to client then replies DIAL-ERROR
 	// otherwise, server replies, USERNAME-TAKEN
 
-	//check username
-	//if taken reply username taken
-	if authenticateFailure(message.UserName, message.Password) {
-
+	//check username, if taken reply username taken
+	if authenticationFailure(message.UserName, message.Password) {
 		reply.Message = "USERNAME-TAKEN"
-
 		//else dial rpc
+
 	} else {
 
 		clientConn, err := rpc.Dial("tcp", message.RpcAddress)
@@ -375,16 +376,15 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		var clientReply ClientReply
 		var rpcUpdateMessage ChatServer
 
-		//Dial and update the cient with their server address
+		//Dial and update the client with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
-		selectedServer, selectionError := getServerForCLient();
-		if (selectionError != nil) {
+		selectedServer, selectionError := getServerForCLient()
+		if selectionError != nil {
 			println(selectionError.Error())
 		}
 
 		println(selectedServer)
-		
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
@@ -392,17 +392,15 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 			return nil
 		}
 
+		Logger.LogLocalEvent("client joined chat service successful")
 		reply.Message = "WELCOME"
-
 	}
 
 	return nil
 }
 
-
 /*
 	CHECK for ERRORS
-
 */
 func checkError(err error) {
 	if err != nil {
@@ -414,37 +412,17 @@ func checkError(err error) {
 /* Get local IP */
 // GetLocalIP returns the non loopback local IP of the host
 func GetLocalIP() string {
-    addrs, err := net.InterfaceAddrs()
-    if err != nil {
-        return ""
-    }
-    for _, address := range addrs {
-        // check the address type and if it is not a loopback the display it
-        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-            if ipnet.IP.To4() != nil {
-                return ipnet.IP.String()
-            }
-        }
-    }
-    return ""
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
 }
-
-
-
-//Error creation, etc.
-/*
-type error interface {
-    Error() string
-}
-type errorString struct {
-    s string
-}
-
-func (e *errorString) Error() string {
-    return e.s
-}
-
-func New(text string) error {
-    return &errorString{text}
-}
-*/
