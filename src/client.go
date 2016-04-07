@@ -320,9 +320,9 @@ func getClientPassword() string {
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-			checkError(err)
+			//checkError(err)
 		}
-
+		fmt.Println()
 		inputPword := string(bytePassword)
 		pword = inputPword
 		if len(pword) > 3 {
@@ -382,7 +382,7 @@ func filterMessage(msg string) string {
 // Method to handle all chat input from client
 func chat() {
 	for {
-
+		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
 		var reply ServerReply
 		message := getMessage()
