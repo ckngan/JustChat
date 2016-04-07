@@ -1,12 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/rpc"
 	"os"
-	"errors"
 	"sync"
 
 	"github.com/arcaneiceman/GoVector/govec"
@@ -27,9 +27,9 @@ type ClientItem struct {
 }
 
 type ServerItem struct {
-	id string
-	address string
-	clients int
+	id         string
+	address    string
+	clients    int
 	nextServer *ServerItem
 }
 
@@ -68,10 +68,9 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
-
 // Message from new Node
 type NewNodeSetup struct {
-	Id string
+	Id         string
 	RPCAddress string
 }
 
@@ -207,7 +206,7 @@ func getServerForCLient() (*ServerItem, error) {
 	//TODO: block until at least one server on list ???
 
 	addingCond.L.Lock()
-	for (serverList == nil){
+	for serverList == nil {
 		addingCond.Wait()
 	}
 
@@ -215,7 +214,7 @@ func getServerForCLient() (*ServerItem, error) {
 
 	//check to see if username exists
 	for next != nil {
-		if (next.clients > (*next).nextServer.clients){
+		if next.clients > (*next).nextServer.clients {
 			lowestNumberServer = (*next).nextServer
 		}
 
@@ -224,7 +223,7 @@ func getServerForCLient() (*ServerItem, error) {
 
 	addingCond.L.Unlock()
 
-	if (lowestNumberServer != nil){
+	if lowestNumberServer != nil {
 		return lowestNumberServer, nil
 	} else {
 		return nil, errors.New("No Connected Servers")
@@ -275,7 +274,7 @@ func addNode(ident string, address string) {
 }
 
 func isNewNode(ident string) bool {
-	next := serverList 
+	next := serverList
 
 	for next != nil {
 		if (*next).id == ident {
@@ -287,7 +286,7 @@ func isNewNode(ident string) bool {
 	return true
 }
 
-/* 
+/*
 	RPC METHODS FOR NODES
 */
 
@@ -295,7 +294,7 @@ func isNewNode(ident string) bool {
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
 
-	if (isNewNode(message.Id)){
+	if isNewNode(message.Id) {
 		addNode(message.Id, message.RPCAddress)
 	}
 
@@ -337,14 +336,13 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		//Dial and update the client with their server address
 		rpcUpdateMessage.ServerName = "NameOfServer"
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
-		selectedServer, selectionError := getServerForCLient();
-
-		if (selectionError != nil) {
+		selectedServer, selectionError := getServerForCLient()
+		if selectionError != nil {
 			println(selectionError.Error())
 		}
 
 		println(selectedServer)
-		
+
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
@@ -371,35 +369,17 @@ func checkError(err error) {
 /* Get local IP */
 // GetLocalIP returns the non loopback local IP of the host
 func GetLocalIP() string {
-    addrs, err := net.InterfaceAddrs()
-    if err != nil {
-        return ""
-    }
-    for _, address := range addrs {
-        // check the address type and if it is not a loopback the display it
-        if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-            if ipnet.IP.To4() != nil {
-                return ipnet.IP.String()
-            }
-        }
-    }
-    return ""
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
 }
-
-//Error creation, etc.
-/*
-type error interface {
-    Error() string
-}
-type errorString struct {
-    s string
-}
-
-func (e *errorString) Error() string {
-    return e.s
-}
-
-func New(text string) error {
-    return &errorString{text}
-}
-*/

@@ -99,7 +99,7 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply
 	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
 	Logger.LogLocalEvent("received file transfer")
 	return nil
-}	
+}
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ClientReply) error {
@@ -329,7 +329,7 @@ func getClientPassword() string {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
 			// checkError(err)
 		}
-
+		fmt.Println()
 		inputPword := string(bytePassword)
 		pword = inputPword
 		if len(pword) > 3 {
@@ -389,7 +389,7 @@ func filterMessage(msg string) string {
 // Method to handle all chat input from client
 func chat() {
 	for {
-
+		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
 		var reply ServerReply
 		message := getMessage()
