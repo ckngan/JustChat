@@ -35,6 +35,9 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply)
 
 
+// Method to handle private rpc messages from clients
+func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ClientReply)
+
 Load Balancer API
 
 <--- Clients Joining Chat service --->
@@ -53,7 +56,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 //Function for storage node to announce itself to load balancer
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) error {
-	//if nodeName taken --> reply.errorMessage = "NAME-TAKEN"		
+	//if nodeName taken --> reply.errorMessage = "NAME-TAKEN"
 	//if no error --> reply.NodeList == ListOfAllNodes ; reply.errorMessage = "SUCCESS"
 
 	return nil
@@ -68,8 +71,16 @@ Storage/Main server API
 //Function for clients to send a message to the chat service
 func (msgSvc *MessageService) SendMessage(message *ClientMessage, reply *ServerReply)
 
+// send public message, server handles distribution
+func (msgSvc *MessageService) SendPublicMessage(message *ClientMessage, reply *ServerReply)
 
+// send public file, server handles distribution
+func (msgSvc *MessageService) SendPublicFile(message *FileData, reply *ServerReply)
 
+// Returns the ip address of the client to send private message to
+func (msgSvc *MessageService) SendPrivateMessage(message *ClientMessage, reply *ServerReply)
 
+// Returns the ip:port address of the client to send private file to
+func (msgSvc *MessageService) SendPrivateFile(message *ClientMessage, reply *ServerReply)
 
 The End.

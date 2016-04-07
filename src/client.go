@@ -9,6 +9,7 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/arcaneiceman/GoVector/govec"
@@ -57,6 +58,7 @@ type ClientReply struct {
 
 // RPC of chat server
 var NewRpcChatServer string
+var chatServer *rpc.Client
 
 // Address client is listening on for rpc calls
 var clientRpcAddress string
@@ -65,7 +67,7 @@ var clientRpcAddress string
 var loadBalancers []string
 
 // buffer Max
-const bufferMax int = 100
+const bufferMax int = 50
 
 // Storage for incoming messages
 var incomingMessageBuffer []ClientMessage
@@ -80,6 +82,8 @@ var password string
 var bufferCount int
 var readBufferCount int
 
+var messageChannel chan string
+
 // Load Balancer connection
 var loadBalancer *rpc.Client
 
@@ -91,17 +95,19 @@ type ClientMessageService int
 // Method for a client to call another client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply) error {
 
-	directory := getDownloadDirectory()
-	// creating file to be written to
-	newFile, err := os.Create(directory + "/" + args.FileName)
-	checkError(err)
+	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
+	return nil
+}
 
-	// writing file received from rpc
-	n, err := newFile.Write(args.Data)
-	checkError(err)
-	fmt.Printf("File Received with %d bytes from %s", n, args.UserName)
-	fmt.Println()
-	reply.Message = "Received"
+// Method to handle private rpc messages from clients
+func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ClientReply) error {
+	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
+	messageOwner := editText(args.UserName, 42, 1)
+	output := privateFlag + messageOwner
+	fmt.Println(output)
+	handleFileTransfer(args.FileName, args.UserName, args.Data)
+
+	reply.Message = ""
 	return nil
 }
 
@@ -109,28 +115,58 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply
 func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply) error {
 	NewRpcChatServer = args.ServerRpcAddress
 	reply.Message = ""
+	// make the rpc call to the server as it's updated
+	attempts := 0
+	for {
+		if attempts > 5 {
+			disconnectClient()
+			break
+		}
+		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
+		if err != nil {
+			fmt.Print(editText("Error connecting to JustChat\n", 31, 1))
+			attempts++
+		} else {
+			chatServer = chatConn
+			break
+		}
+	}
 	return nil
 }
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
-	var clientMessage ClientMessage
+	messageOwner := editText(args.UserName, 42, 1)
+	messageBody := editText(args.Message, 33, 1)
+	output := messageOwner + ": " + messageBody
+	messageChannel <- output
+
+	reply.Message = ""
+	return nil
+	/*var clientMessage ClientMessage
 	clientMessage.UserName = args.UserName
 	clientMessage.Message = args.Message
 
 	if bufferCount < bufferMax {
-		incomingMessageBuffer[bufferCount] = clientMessage
-		bufferCount++
+	incomingMessageBuffer[bufferCount] = clientMessage
+	bufferCount++
 	} else {
-		// reset buffer Count
-		bufferCount = 0
-		incomingMessageBuffer[bufferCount] = clientMessage
-	}
-	return nil
+	// reset buffer Count
+	bufferCount = 0
+	incomingMessageBuffer[bufferCount] = clientMessage
+	}*/
 }
 
-func handleRpc(server net.Conn) {
+// Method to handle private rpc messages from clients
+func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ClientReply) error {
+	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
+	messageOwner := editText(args.UserName, 42, 1)
+	messageBody := editText(args.Message, 33, 1)
+	output := privateFlag + messageOwner + ": " + messageBody
+	messageChannel <- output
 
+	reply.Message = ""
+	return nil
 }
 
 // Main method to setup for client
@@ -148,8 +184,9 @@ func main() {
 	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
 
 	incomingMessageBuffer = make([]ClientMessage, bufferMax)
+	messageChannel = make(chan string, bufferMax)
 
-	// Registering RPC service for pi server
+	// Registering RPC service for client's server
 	clientService := new(ClientMessageService)
 	rpc.Register(clientService)
 
@@ -160,7 +197,7 @@ func main() {
 		fmt.Println("Client Server Error:", err)
 		return
 	}
-	defer clientServer.Close()
+
 	// Do something to advertise global rpc address
 	clientRpcAddress = clientServer.Addr().String()
 
@@ -182,6 +219,9 @@ func main() {
 	// continuously check for server connection -- possibly chat serverMessage
 	// if chat server disconnects, reconnect to load balancer, saving state
 	clientSetup()
+
+	clientServer.Close()
+	os.Exit(0)
 }
 
 /* Method to initiate client setup */
@@ -192,6 +232,9 @@ func clientSetup() {
 
 	// commands to use throughout the message
 	messageCommands()
+
+	// main chat function
+	chat()
 
 }
 
@@ -275,9 +318,10 @@ func getClientPassword() string {
 		fmt.Print(editText("Please enter your password:", 44, 1), " ")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 
-		/*if err == nil {
+		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-		}*/
+			checkError(err)
+		}
 
 		inputPword := string(bytePassword)
 		pword = inputPword
@@ -293,7 +337,7 @@ func getClientPassword() string {
 // method to receive download directory from user
 // method also checks if directory exists
 func getDownloadDirectory() string {
-
+	flushToConsole()
 	// Reading input from user for download
 	filename := ""
 	command := "Please enter download directory to receive file"
@@ -309,6 +353,94 @@ func getDownloadDirectory() string {
 		}
 	}
 	return filename
+}
+
+// Method to get message from client's console
+func getMessage() string {
+	flushToConsole()
+
+	message := ""
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print(editText(username, 44, 1), ": ")
+		inputMsg, _ := reader.ReadString('\n')
+		message = inputMsg
+		if len(message) > 0 {
+			break
+		} else {
+			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
+		}
+	}
+	return message
+}
+
+// method to return rpc method to call
+func filterMessage(msg string) string {
+	return ""
+}
+
+// Method to handle all chat input from client
+func chat() {
+	for {
+
+		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
+		var reply ServerReply
+		message := getMessage()
+		filterMessage(message)
+		err2 := chatServer.Call("MessageService.SendPublicMessage", message, &reply)
+		checkError(err2)
+	}
+}
+
+// Method for user to accept or decline file transfers
+func receiveFilePermission(filename string) bool {
+	// Reading input from user for username
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", 44, 1), " ")
+		permitInput, _ := reader.ReadString('\n')
+		//uname = strings.TrimSpace(inputUsername)
+		permit := strings.TrimSpace(strings.ToLower(permitInput))
+		if len(permit) > 0 {
+			if permit == "y" {
+				return true
+			} else if permit != "n" {
+				return false
+			} else {
+				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1), " ")
+			}
+		} else {
+			fmt.Println(editText("Must enter 1 or more characters\n", 31, 1))
+		}
+	}
+}
+
+// Method to handle the receipt of files
+func handleFileTransfer(filename string, user string, filedata []byte) string {
+	// option to receive file
+	if receiveFilePermission(filename) {
+		directory := getDownloadDirectory()
+		// creating file to be written to
+		newFile, err := os.Create(directory + "/" + filename)
+		checkError(err)
+
+		// writing file received from rpc
+		n, err := newFile.Write(filedata)
+		checkError(err)
+		fmt.Println()
+		output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
+		messageChannel <- output
+		return "Received"
+	} else {
+		return "Decline"
+	}
+}
+
+// Method to print messages to console in order of receipt
+func flushToConsole() {
+	for m := range messageChannel {
+		fmt.Println(m)
+	}
 }
 
 // method to print the commands users can use
@@ -349,16 +481,21 @@ func getIP() (ip string) {
 	return ip
 }
 
+func disconnectClient() {
+	// Can be a bit more verbose
+	os.Exit(-1)
+}
+
 /* Function to edit output text color
 /* Foreground/Background colors
- *			3/40	Black
- *			3/41	Red
- *		  3/42	Green
- *			3/43	Yellow
- *			3/44	Blue
- *			3/45	Magenta
- *			3/46	Cyan
- *			3/47	White
+*			3/40	Black
+*			3/41	Red
+*		  3/42	Green
+*			3/43	Yellow
+*			3/44	Blue
+*			3/45	Magenta
+*			3/46	Cyan
+*			3/47	White
 */
 
 func editText(text string, color int, intensity int) string {
