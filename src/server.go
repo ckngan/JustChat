@@ -27,10 +27,10 @@ type ClientItem struct {
 }
 
 type ServerItem struct {
-	id         string
-	address    string
-	clients    int
-	nextServer *ServerItem
+	Id         string
+	Address    string
+	Clients    int
+	NextServer *ServerItem
 }
 
 // Message Format from client
@@ -68,11 +68,13 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
-// Message from new Node
+//NewStorageNode Args
 type NewNodeSetup struct {
-	Id         string
-	RPCAddress string
+	RPC_CLIENT_IPPORT string
+	RPC_SERVER_IPPORT string
+	UDP_IPPORT string
 }
+
 
 //reply from node with message
 type NodeReply struct {
@@ -214,11 +216,11 @@ func getServerForCLient() (*ServerItem, error) {
 
 	//check to see if username exists
 	for next != nil {
-		if next.clients > (*next).nextServer.clients {
-			lowestNumberServer = (*next).nextServer
+		if next.Clients > (*next).NextServer.Clients {
+			lowestNumberServer = (*next).NextServer
 		}
 
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
 
 	addingCond.L.Unlock()
@@ -263,7 +265,7 @@ func addNode(ident string, address string) {
 	if serverList == nil {
 		serverList = newNode
 	} else {
-		newNode.nextServer = serverList
+		newNode.NextServer = serverList
 		serverList = newNode
 	}
 
@@ -277,10 +279,10 @@ func isNewNode(ident string) bool {
 	next := serverList
 
 	for next != nil {
-		if (*next).id == ident {
+		if (*next).Id == ident {
 			return false
 		}
-		next = (*next).nextServer
+		next = (*next).NextServer
 	}
 
 	return true
@@ -293,10 +295,10 @@ func isNewNode(ident string) bool {
 //Function a node will call when it comes online
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
-
-	if isNewNode(message.Id) {
+    println("A new node is trying to connect")
+	/*if isNewNode(message.Id) {
 		addNode(message.Id, message.RPCAddress)
-	}
+	}*/
 
 	reply.ListOfNodes = serverList
 
