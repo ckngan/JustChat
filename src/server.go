@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"errors"
+	"sync"
 )
 
 /*
@@ -71,6 +73,11 @@ type NewNodeSetup struct {
 	RPCAddress string
 }
 
+//reply from node with message
+type NodeReply struct {
+	Message string
+}
+
 /*
 	----GLOBAL VARIABLES----
 */
@@ -81,6 +88,9 @@ var nodeConnAdress string
 //List of clients
 var clientList *ClientItem
 var serverList *ServerItem
+
+var mutexForAddingNodes sync.Mutex
+var addingCond *sync.Cond
 
 func main() {
 
@@ -106,6 +116,13 @@ func main() {
 	defer clientServer.Close()
 	ipV4 := clientServer.Addr().String()
 	fmt.Print("This machine's address: "+ ipV4 + "\n")
+
+
+
+	mutexForAddingNodes = sync.Mutex{}
+	addingCond = sync.NewCond(&mutexForAddingNodes)
+
+	
 
 
 
@@ -185,7 +202,14 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	//block until at least one server on list ???
+	//TODO: block until at least one server on list ???
+
+	addingCond.L.Lock()
+	for (serverList == nil){
+		addingCond.Wait()
+	}
+
+
 
 	lowestNumberServer := serverList
 
@@ -198,7 +222,9 @@ func getServerForCLient() (*ServerItem, error) {
 		next = (*next).nextServer
 	}
 
-	lowestNumberServer.clients ++
+
+	addingCond.L.Unlock()
+
 
 	if (lowestNumberServer != nil){
 		return lowestNumberServer, nil
@@ -231,6 +257,10 @@ func authenticateFailure(username string, password string) bool {
 
 func addNode(ident string, address string) {
 
+	//TODO: need restart implenentation
+
+	addingCond.L.Lock()
+
 	newNode := &ServerItem{ident, address, 0, nil}
 
 	if serverList == nil {
@@ -240,7 +270,23 @@ func addNode(ident string, address string) {
 		serverList = newNode
 	}
 
+	addingCond.L.Unlock()
+	addingCond.Signal()
+
 	return
+}
+
+func isNewNode(ident string) bool {
+	next := serverList 
+
+	for next != nil {
+		if (*next).id == ident {
+			return false
+		}
+		next = (*next).nextServer
+	}
+
+	return true
 }
 
 
@@ -249,9 +295,14 @@ func addNode(ident string, address string) {
 	RPC METHODS FOR NODES
 
 */
+
+//Function a node will call when it comes online
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
-	//add node to list
-	addNode(message.Id, message.RPCAddress)
+	//add node to list on connection
+
+	if (isNewNode(message.Id)){
+		addNode(message.Id, message.RPCAddress)
+	}
 
 	reply.ListOfNodes = serverList
 
@@ -295,7 +346,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		rpcUpdateMessage.ServerRpcAddress = ":7000"
 		selectedServer, selectionError := getServerForCLient();
 		if (selectionError != nil) {
-			println(selectionError)
+			println(selectionError.Error())
 		}
 
 		println(selectedServer)
@@ -343,3 +394,23 @@ func GetLocalIP() string {
     }
     return ""
 }
+
+
+
+//Error creation, etc.
+/*
+type error interface {
+    Error() string
+}
+type errorString struct {
+    s string
+}
+
+func (e *errorString) Error() string {
+    return e.s
+}
+
+func New(text string) error {
+    return &errorString{text}
+}
+*/
