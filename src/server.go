@@ -28,8 +28,9 @@ type ClientItem struct {
 }
 
 type ServerItem struct {
-	Id         string
-	Address    string
+	UDP_IPPORT string
+	RPC_SERVER_IPPORT string
+	RPC_CLIENT_IPPORT string
 	Clients    int
 	NextServer *ServerItem
 }
@@ -277,13 +278,13 @@ func authenticationFailure(username string, password string) bool {
 	return false
 }
 
-func addNode(ident string, address string) {
+func addNode(udp string, clientRPC string, serverRPC string) {
 
 	//TODO: need restart implementation
 
 	addingCond.L.Lock()
 
-	newNode := &ServerItem{ident, address, 0, nil}
+	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
 
 	if serverList == nil {
 		serverList = newNode
@@ -302,7 +303,7 @@ func isNewNode(ident string) bool {
 	next := serverList
 
 	for next != nil {
-		if (*next).Id == ident {
+		if (*next).UDP_IPPORT == ident {
 			return false
 		}
 		next = (*next).NextServer
@@ -318,10 +319,12 @@ func isNewNode(ident string) bool {
 //Function a node will call when it comes online
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
-	println("A new node is trying to connect")
-	/*if isNewNode(message.Id) {
-		addNode(message.Id, message.RPCAddress)
-	}*/
+
+    println("A new node is trying to connect", message.UDP_IPPORT)
+	if isNewNode(message.UDP_IPPORT) {
+		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT)
+	}
+
 
 	reply.ListOfNodes = serverList
 
