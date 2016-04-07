@@ -8,6 +8,7 @@ import (
 	"os"
 	"errors"
 	"sync"
+	"strconv"
 )
 
 /*
@@ -49,6 +50,7 @@ type NewClientSetup struct {
 //Retrun to client
 type ServerReply struct {
 	Message string
+
 }
 
 type NodeListReply struct {
@@ -84,27 +86,38 @@ type NodeReply struct {
 //Net Info of this server
 var clientConnAddress string
 var nodeConnAdress string
+var lbDesignation int
+
+//List of All LoadBalance Servers
+var LBServers[] string
 
 //List of clients
 var clientList *ClientItem
 var serverList *ServerItem
 
+//List of locks 	
 var mutexForAddingNodes sync.Mutex
 var addingCond *sync.Cond
+
+var mutexForAddingClients sync.Mutex
+var clientSync *sync.Cond
 
 func main() {
 
 	// Parse arguments
-	usage := fmt.Sprintf("Usage: %s [client ip:port] [server ip:port] \n", os.Args[0])
-	if len(os.Args) != 3 {
+	usage := fmt.Sprintf("Usage: %s [client ip:port] [server ip:port] [designation ( 0 | 1 | 2 )] \n", os.Args[0])
+	if len(os.Args) != 4 {
 		fmt.Printf(usage)
 		os.Exit(1)
 	}
 
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
+	desTmp := os.Args[3]
+	lbDesignation, _ = strconv.Atoi(desTmp)
 
-	
+	LBServers = []string{":10001", ":10002", ":10003"}
+
 	////Print out address information
 	ip := GetLocalIP()
 	// listen on first open port server finds
@@ -119,10 +132,13 @@ func main() {
 
 
 
+
+	//Locks
 	mutexForAddingNodes = sync.Mutex{}
 	addingCond = sync.NewCond(&mutexForAddingNodes)
 
-	
+	mutexForAddingClients = sync.Mutex{}
+	clientSync = sync.NewCond(&mutexForAddingClients)
 
 
 
@@ -139,6 +155,8 @@ func main() {
 		log.Fatal("listen error:", err)
 	}
 
+
+	//Listener go function for clients
 	go func() {
 		for {
 			println("Waiting for Client Calls")
@@ -148,6 +166,20 @@ func main() {
 			}
 			go rpc.ServeConn(clientConnection)
 			println("Accepted Call from " + clientConnection.RemoteAddr().String())
+		}
+	}()
+
+	//Listener go function for other load balancers
+	lBListener, _ := net.Listen("tcp", LBServers[lbDesignation])
+	go func() {
+		for {
+			loadBalanceConnection, err := lBListener.Accept()
+			if err!= nil {
+				log.Fatal("LoadBalancer Connection error: ", err)
+			}
+
+			go rpc.ServeConn(loadBalanceConnection)
+			println("Accepted LoadBalancer Call from: " + loadBalanceConnection.RemoteAddr().String())
 		}
 	}()
 
@@ -202,10 +234,11 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	//TODO: block until at least one server on list ???
+	
 
 	addingCond.L.Lock()
 	for (serverList == nil){
+
 		addingCond.Wait()
 	}
 
@@ -233,6 +266,8 @@ func getServerForCLient() (*ServerItem, error) {
 	}
 }
 
+
+
 func authenticateFailure(username string, password string) bool {
 	next := clientList
 
@@ -257,8 +292,7 @@ func authenticateFailure(username string, password string) bool {
 
 func addNode(ident string, address string) {
 
-	//TODO: need restart implenentation
-
+	
 	addingCond.L.Lock()
 
 	newNode := &ServerItem{ident, address, 0, nil}
