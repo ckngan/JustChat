@@ -123,6 +123,7 @@ func main() {
 
 	// Create log
 	Logger = govec.InitializeMutipleExecutions("lb " + ipV4, "sys")
+	Logger.LogThis("LB was initialized", "lb " + ipV4, "{\"lb " + ipV4 + "\":1}")
 
 	mutexForAddingNodes = sync.Mutex{}
 	addingCond = sync.NewCond(&mutexForAddingNodes)

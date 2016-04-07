@@ -211,6 +211,7 @@ func main() {
 
 	// Create log
 	Logger = govec.InitializeMutipleExecutions("client " + clientRpcAddress, "sys")
+	Logger.LogThis("Client was initialized", "client " + clientRpcAddress, "{\"client " + clientRpcAddress + "\":1}")
 
 	// go routine to start rpc connection for client
 	go func() {
