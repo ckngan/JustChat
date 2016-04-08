@@ -31,3 +31,485 @@ Initialization Complete
 === Execution #6  ===
 client 128.189.80.120:64528 {"client 128.189.80.120:64528":2}
 connected to a loadBalancer
+ 
+=== Execution #7  ===
+lb [::]:57688 {"lb [::]:57688":1}
+LB was initialized
+ 
+=== Execution #8  ===
+lb [::]:58230 {"lb [::]:58230":1}
+LB was initialized
+ 
+=== Execution #9  ===
+lb [::]:58245 {"lb [::]:58245":1}
+LB was initialized
+ 
+=== Execution #10  ===
+lb [::]:58271 {"lb [::]:58271":1}
+LB was initialized
+ 
+=== Execution #11  ===
+lb [::]:58279 {"lb [::]:58279":1}
+LB was initialized
+ 
+=== Execution #12  ===
+lb [::]:58287 {"lb [::]:58287":1}
+LB was initialized
+ 
+=== Execution #13  ===
+lb [::]:58297 {"lb [::]:58297":1}
+LB was initialized
+ 
+=== Execution #14  ===
+lb [::]:58310 {"lb [::]:58310":1}
+LB was initialized
+ 
+=== Execution #15  ===
+lb [::]:58328 {"lb [::]:58328":1}
+LB was initialized
+ 
+=== Execution #16  ===
+lb [::]:58340 {"lb [::]:58340":1}
+LB was initialized
+ 
+=== Execution #17  ===
+lb [::]:58352 {"lb [::]:58352":1}
+LB was initialized
+ 
+=== Execution #18  ===
+lb [::]:58408 {"lb [::]:58408":1}
+LB was initialized
+ 
+=== Execution #19  ===
+lb [::]:58462 {"lb [::]:58462":1}
+LB was initialized
+ 
+=== Execution #20  ===
+lb [::]:58739 {"lb [::]:58739":1}
+LB was initialized
+ 
+=== Execution #21  ===
+lb [::]:58747 {"lb [::]:58747":1}
+LB was initialized
+ 
+=== Execution #22  ===
+lb [::]:58762 {"lb [::]:58762":1}
+LB was initialized
+ 
+=== Execution #23  ===
+lb [::]:58774 {"lb [::]:58774":1}
+LB was initialized
+ 
+=== Execution #24  ===
+lb [::]:58779 {"lb [::]:58779":1}
+LB was initialized
+ 
+=== Execution #25  ===
+lb [::]:58792 {"lb [::]:58792":1}
+LB was initialized
+ 
+=== Execution #26  ===
+lb [::]:58897 {"lb [::]:58897":1}
+LB was initialized
+ 
+=== Execution #27  ===
+lb [::]:58926 {"lb [::]:58926":1}
+LB was initialized
+ 
+=== Execution #28  ===
+lb [::]:58941 {"lb [::]:58941":1}
+LB was initialized
+ 
+=== Execution #29  ===
+lb [::]:58951 {"lb [::]:58951":1}
+LB was initialized
+ 
+=== Execution #30  ===
+lb [::]:58994 {"lb [::]:58994":1}
+LB was initialized
+ 
+=== Execution #31  ===
+lb [::]:59014 {"lb [::]:59014":1}
+LB was initialized
+ 
+=== Execution #32  ===
+lb [::]:59026 {"lb [::]:59026":1}
+LB was initialized
+ 
+=== Execution #33  ===
+lb [::]:59090 {"lb [::]:59090":1}
+LB was initialized
+ 
+=== Execution #34  ===
+lb [::]:59096 {"lb [::]:59096":1}
+LB was initialized
+ 
+=== Execution #35  ===
+lb [::]:59108 {"lb [::]:59108":1}
+LB was initialized
+ 
+=== Execution #36  ===
+lb [::]:59120 {"lb [::]:59120":1}
+LB was initialized
+ 
+=== Execution #37  ===
+lb [::]:59133 {"lb [::]:59133":1}
+LB was initialized
+ 
+=== Execution #38  ===
+lb [::]:59143 {"lb [::]:59143":1}
+LB was initialized
+ 
+=== Execution #39  ===
+lb [::]:59153 {"lb [::]:59153":1}
+LB was initialized
+ 
+=== Execution #40  ===
+lb [::]:59167 {"lb [::]:59167":1}
+LB was initialized
+ 
+=== Execution #41  ===
+lb [::]:59175 {"lb [::]:59175":1}
+LB was initialized
+ 
+=== Execution #42  ===
+lb [::]:59201 {"lb [::]:59201":1}
+LB was initialized
+ 
+=== Execution #43  ===
+lb [::]:59213 {"lb [::]:59213":1}
+LB was initialized
+ 
+=== Execution #44  ===
+lb [::]:59223 {"lb [::]:59223":1}
+LB was initialized
+ 
+=== Execution #45  ===
+lb [::]:59235 {"lb [::]:59235":1}
+LB was initialized
+ 
+=== Execution #46  ===
+lb [::]:59245 {"lb [::]:59245":1}
+LB was initialized
+ 
+=== Execution #47  ===
+lb [::]:59255 {"lb [::]:59255":1}
+LB was initialized
+ 
+=== Execution #48  ===
+lb [::]:59276 {"lb [::]:59276":1}
+LB was initialized
+ 
+=== Execution #49  ===
+lb [::]:59284 {"lb [::]:59284":1}
+LB was initialized
+ 
+=== Execution #50  ===
+lb [::]:59292 {"lb [::]:59292":1}
+LB was initialized
+ 
+=== Execution #51  ===
+lb [::]:59298 {"lb [::]:59298":1}
+LB was initialized
+ 
+=== Execution #52  ===
+lb [::]:59311 {"lb [::]:59311":1}
+LB was initialized
+ 
+=== Execution #53  ===
+lb [::]:59713 {"lb [::]:59713":1}
+LB was initialized
+ 
+=== Execution #54  ===
+lb [::]:59749 {"lb [::]:59749":1}
+LB was initialized
+ 
+=== Execution #55  ===
+lb [::]:60484 {"lb [::]:60484":1}
+LB was initialized
+ 
+=== Execution #56  ===
+lb [::]:60494 {"lb [::]:60494":1}
+LB was initialized
+ 
+=== Execution #57  ===
+lb [::]:60504 {"lb [::]:60504":1}
+LB was initialized
+ 
+=== Execution #58  ===
+lb [::]:60720 {"lb [::]:60720":1}
+LB was initialized
+ 
+=== Execution #59  ===
+lb [::]:60747 {"lb [::]:60747":1}
+LB was initialized
+ 
+=== Execution #60  ===
+lb [::]:60759 {"lb [::]:60759":1}
+LB was initialized
+ 
+=== Execution #61  ===
+lb [::]:60769 {"lb [::]:60769":1}
+LB was initialized
+ 
+=== Execution #62  ===
+lb [::]:60782 {"lb [::]:60782":1}
+LB was initialized
+ 
+=== Execution #63  ===
+lb [::]:60798 {"lb [::]:60798":1}
+LB was initialized
+ 
+=== Execution #64  ===
+lb [::]:60808 {"lb [::]:60808":1}
+LB was initialized
+ 
+=== Execution #65  ===
+lb [::]:60832 {"lb [::]:60832":1}
+LB was initialized
+ 
+=== Execution #66  ===
+lb [::]:60842 {"lb [::]:60842":1}
+LB was initialized
+ 
+=== Execution #67  ===
+lb [::]:60867 {"lb [::]:60867":1}
+LB was initialized
+ 
+=== Execution #68  ===
+lb [::]:60878 {"lb [::]:60878":1}
+LB was initialized
+ 
+=== Execution #69  ===
+lb [::]:60897 {"lb [::]:60897":1}
+LB was initialized
+ 
+=== Execution #70  ===
+lb [::]:60905 {"lb [::]:60905":1}
+LB was initialized
+ 
+=== Execution #71  ===
+lb [::]:60917 {"lb [::]:60917":1}
+LB was initialized
+ 
+=== Execution #72  ===
+client 192.168.0.146:60939 {"client 192.168.0.146:60939":1}
+Client was initialized
+lb [::]:60917 {"lb [::]:60917":2}
+rpc client connection started
+client 192.168.0.146:60939 {"client 192.168.0.146:60939":2}
+connected to a loadBalancer
+client 192.168.0.146:60939 {"client 192.168.0.146:60939":3}
+rpc connection started
+ 
+=== Execution #73  ===
+lb [::]:60948 {"lb [::]:60948":1}
+LB was initialized
+ 
+=== Execution #74  ===
+lb [::]:60961 {"lb [::]:60961":1}
+LB was initialized
+ 
+=== Execution #75  ===
+lb [::]:60974 {"lb [::]:60974":1}
+LB was initialized
+ 
+=== Execution #76  ===
+lb [::]:61003 {"lb [::]:61003":1}
+LB was initialized
+ 
+=== Execution #77  ===
+client 192.168.0.146:61009 {"client 192.168.0.146:61009":1}
+Client was initialized
+client 192.168.0.146:61009 {"client 192.168.0.146:61009":2}
+connected to a loadBalancer
+lb [::]:61003 {"lb [::]:61003":2}
+rpc client connection started
+lb [::]:61003 {"lb [::]:61003":3}
+new storage node online
+client 192.168.0.146:61009 {"client 192.168.0.146:61009":3}
+rpc connection started
+ 
+=== Execution #78  ===
+lb [::]:61236 {"lb [::]:61236":1}
+LB was initialized
+lb [::]:61236 {"lb [::]:61236":2}
+new storage node online
+ 
+=== Execution #79  ===
+lb [::]:61259 {"lb [::]:61259":1}
+LB was initialized
+lb [::]:61259 {"lb [::]:61259":2}
+new storage node online
+lb [::]:61259 {"lb [::]:61259":3}
+new storage node online
+ 
+=== Execution #80  ===
+lb [::]:61302 {"lb [::]:61302":1}
+LB was initialized
+ 
+=== Execution #81  ===
+client 192.168.0.146:61310 {"client 192.168.0.146:61310":1}
+Client was initialized
+lb [::]:61302 {"lb [::]:61302":2}
+rpc client connection started
+client 192.168.0.146:61310 {"client 192.168.0.146:61310":2}
+connected to a loadBalancer
+client 192.168.0.146:61310 {"client 192.168.0.146:61310":3}
+rpc connection started
+lb [::]:61302 {"lb [::]:61302":3}
+new storage node online
+ 
+=== Execution #82  ===
+lb [::]:61335 {"lb [::]:61335":1}
+LB was initialized
+lb [::]:61335 {"lb [::]:61335":2}
+new storage node online
+ 
+=== Execution #83  ===
+client 192.168.0.146:61352 {"client 192.168.0.146:61352":1}
+Client was initialized
+client 192.168.0.146:61352 {"client 192.168.0.146:61352":2}
+connected to a loadBalancer
+lb [::]:61335 {"lb [::]:61335":3}
+rpc client connection started
+client 192.168.0.146:61352 {"client 192.168.0.146:61352":3}
+rpc connection started
+client 192.168.0.146:61352 {"client 192.168.0.146:61352":4}
+rpc chat server updated
+ 
+=== Execution #84  ===
+lb [::]:61444 {"lb [::]:61444":1}
+LB was initialized
+lb [::]:61444 {"lb [::]:61444":2}
+new storage node online
+ 
+=== Execution #85  ===
+client 192.168.0.146:61461 {"client 192.168.0.146:61461":1}
+Client was initialized
+lb [::]:61444 {"lb [::]:61444":3}
+rpc client connection started
+client 192.168.0.146:61461 {"client 192.168.0.146:61461":2}
+connected to a loadBalancer
+client 192.168.0.146:61461 {"client 192.168.0.146:61461":3}
+rpc connection started
+client 192.168.0.146:61461 {"client 192.168.0.146:61461":4}
+rpc chat server updated
+lb [::]:61444 {"lb [::]:61444":4}
+client joined chat service successful
+client 192.168.0.146:61461 {"client 192.168.0.146:61461":5}
+received message from server
+ 
+=== Execution #86  ===
+lb [::]:61476 {"lb [::]:61476":1}
+LB was initialized
+ 
+=== Execution #87  ===
+client 192.168.0.146:61484 {"client 192.168.0.146:61484":1}
+Client was initialized
+lb [::]:61476 {"lb [::]:61476":2}
+rpc client connection started
+client 192.168.0.146:61484 {"client 192.168.0.146:61484":2}
+connected to a loadBalancer
+client 192.168.0.146:61484 {"client 192.168.0.146:61484":3}
+rpc connection started
+lb [::]:61476 {"lb [::]:61476":3}
+new storage node online
+ 
+=== Execution #88  ===
+lb [::]:61539 {"lb [::]:61539":1}
+LB was initialized
+ 
+=== Execution #89  ===
+client 192.168.0.146:61543 {"client 192.168.0.146:61543":1}
+Client was initialized
+ 
+=== Execution #90  ===
+client 192.168.0.146:61553 {"client 192.168.0.146:61553":1}
+Client was initialized
+lb [::]:61539 {"lb [::]:61539":2}
+rpc client connection started
+client 192.168.0.146:61553 {"client 192.168.0.146:61553":2}
+connected to a loadBalancer
+client 192.168.0.146:61553 {"client 192.168.0.146:61553":3}
+rpc connection started
+lb [::]:61539 {"lb [::]:61539":3}
+new storage node online
+ 
+=== Execution #91  ===
+lb [::]:61591 {"lb [::]:61591":1}
+LB was initialized
+ 
+=== Execution #92  ===
+client 192.168.0.146:61597 {"client 192.168.0.146:61597":1}
+Client was initialized
+client 192.168.0.146:61597 {"client 192.168.0.146:61597":2}
+connected to a loadBalancer
+lb [::]:61591 {"lb [::]:61591":2}
+rpc client connection started
+client 192.168.0.146:61597 {"client 192.168.0.146:61597":3}
+rpc connection started
+lb [::]:61591 {"lb [::]:61591":3}
+new storage node online
+client 192.168.0.146:61597 {"client 192.168.0.146:61597":4}
+rpc chat server updated
+lb [::]:61591 {"lb [::]:61591":4}
+client joined chat service successful
+client 192.168.0.146:61597 {"client 192.168.0.146:61597":5}
+received message from server
+ 
+=== Execution #93  ===
+lb [::]:62061 {"lb [::]:62061":1}
+LB was initialized
+ 
+=== Execution #94  ===
+lb [::]:62073 {"lb [::]:62073":1}
+LB was initialized
+ 
+=== Execution #95  ===
+lb [::]:62090 {"lb [::]:62090":1}
+LB was initialized
+ 
+=== Execution #96  ===
+lb [::]:62170 {"lb [::]:62170":1}
+LB was initialized
+lb [::]:62170 {"lb [::]:62170":2}
+new storage node online
+ 
+=== Execution #97  ===
+lb [::]:62943 {"lb [::]:62943":1}
+LB was initialized
+lb [::]:62943 {"lb [::]:62943":2}
+new storage node online
+ 
+=== Execution #98  ===
+lb [::]:65203 {"lb [::]:65203":1}
+LB was initialized
+lb [::]:65203 {"lb [::]:65203":2}
+new storage node online
+ 
+=== Execution #99  ===
+lb [::]:65229 {"lb [::]:65229":1}
+LB was initialized
+lb [::]:65229 {"lb [::]:65229":2}
+new storage node online
+lb [::]:65229 {"lb [::]:65229":3}
+new storage node online
+ 
+=== Execution #100  ===
+lb [::]:49317 {"lb [::]:49317":1}
+LB was initialized
+lb [::]:49317 {"lb [::]:49317":2}
+new storage node online
+ 
+=== Execution #101  ===
+lb [::]:49346 {"lb [::]:49346":1}
+LB was initialized
+lb [::]:49346 {"lb [::]:49346":2}
+new storage node online
+lb [::]:49346 {"lb [::]:49346":3}
+new storage node online
+lb [::]:49346 {"lb [::]:49346":4}
+new storage node online
+lb [::]:49346 {"lb [::]:49346":5}
+new storage node online

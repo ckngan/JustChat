@@ -9,6 +9,7 @@ import (
 	"os"
 	//"strconv"
 	"sync"
+	"time"
 
 	"github.com/arcaneiceman/GoVector/govec"
 )
@@ -167,6 +168,10 @@ func main() {
 	//Startup Method to get client list and server list from existing load balancers
 	initializeLB()
 
+
+	//Run heartbeet ( :P Cindy) check to see if nodes are still running
+	go heartbeetCheck()
+
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
 	rpc.Register(clientService)
@@ -225,6 +230,17 @@ func main() {
 /*
 	LOCAL HELPER FUNCTIONS
 */
+
+func heartbeetCheck(){
+	for {
+		time.Sleep(2 * time.Second)
+		if(serverList == nil){
+			println("No Servers")
+		} else {
+
+		}
+	}
+}
 
 func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
@@ -401,8 +417,38 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 		serverList = newNode
 	}
 
+	//alert all nodes to the new node
+	allertAllNodes(newNode)
 
 	return
+}
+
+func allertAllNodes(newNode *ServerItem) {
+	//dial all active nodes and alert them of the new node in the system
+	next := serverList
+	for (next != nil){
+		conn, err := rpc.Dial("tcp", next.RPC_SERVER_IPPORT)
+		if err != nil {
+			println("Error dialing node w/UDP info of: ", next.UDP_IPPORT)
+			return
+		}
+
+		var nodeSetupMessage NewNodeSetup
+		nodeSetupMessage.RPC_CLIENT_IPPORT = newNode.RPC_CLIENT_IPPORT
+		nodeSetupMessage.RPC_SERVER_IPPORT = newNode.RPC_SERVER_IPPORT
+		nodeSetupMessage.UDP_IPPORT = newNode.UDP_IPPORT
+
+		var replyFromNode ServerReply
+
+		callErr := conn.Call("NodeService.NewStorageNode", nodeSetupMessage, &replyFromNode)
+		if callErr != nil {
+			println("Error with method call 'NodeService.NewStorageNode' of: ", next.UDP_IPPORT)
+			return
+		}
+
+		next = (*next).NextServer
+
+	}
 }
 
 func isNewNode(ident string) bool {
@@ -461,6 +507,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
+
 
 	return nil
 }

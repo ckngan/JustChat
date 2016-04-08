@@ -436,7 +436,15 @@ func joinStorageServers() {
 	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
 	checkError(err)
 	list:=reply.ListOfNodes
-	fmt.Println("Nodes So Far: ", list.UDP_IPPORT)
+	
+	i := list
+	println("\nNodes So Far")
+	for (i != nil){
+		println("Node w\\UDP: ", i.UDP_IPPORT)
+		i = (*i).NextServer
+	}
+	println("")
+	
 	serverListMutex.Lock()
 	serverList = list
 	serverListMutex.Unlock()
