@@ -141,6 +141,10 @@ func main() {
 	clientList = nil
 	serverList = nil
 
+
+	//Startup Method to get client list and server list from existing load balancers
+	initializeLB()
+
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
 	rpc.Register(clientService)
@@ -199,6 +203,11 @@ func main() {
 /*
 	LOCAL HELPER FUNCTIONS
 */
+
+func initializeLB() {
+	return
+}
+
 func addClientToList(username string, password string) {
 
 	newClient := &ClientItem{username, password, nil}
