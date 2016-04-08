@@ -50,6 +50,11 @@ type ClientRequest struct {
 	RpcAddress        string // RpcAddress of the client making the request
 }
 
+type ClientInfo struct {
+	UserName   string
+	RPC_IPPORT string
+}
+
 //Retrun to client
 type ServerReply struct {
 	Message string
@@ -294,12 +299,27 @@ func startupChatConnection() {
 			fmt.Println("\n\n", editText("<--------------------- Welcome to"+
 				" JustChat --------------------->", 35, 1))
 			username = uname
+			initChatServerConnection()
 			break
 		} else {
 			fmt.Println(editText("Username name already taken\n", 31, 1))
 		}
 	}
 	return
+}
+
+func initChatServerConnection() {
+	var reply ServerReply
+	var info ClientInfo
+	// Advertise to chat server i'm a new client
+	initChat, err := rpc.Dial("tcp", NewRpcChatServer)
+	checkError(err)
+
+	info.UserName = username
+	info.RPC_IPPORT = clientRpcAddress
+
+	err = initChat.Call("MessageService.ConnectionInit", info, &reply)
+	checkError(err)
 }
 
 // Method to get client's username
