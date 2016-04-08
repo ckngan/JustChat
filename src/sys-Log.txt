@@ -355,3 +355,25 @@ lb 192.168.0.107:53490 {"lb 192.168.0.107:53490":9}
 client joined chat service successful
 client 192.168.0.107:53764 {"client 192.168.0.107:53764":5}
 received message from server
+ 
+=== Execution #28  ===
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":1}
+LB was initialized
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":2}
+new storage node online
+ 
+=== Execution #29  ===
+client 128.189.81.142:56723 {"client 128.189.81.142:56723":1}
+Client was initialized
+client 128.189.81.142:56723 {"client 128.189.81.142:56723":2}
+connected to a loadBalancer
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":3}
+rpc client connection started
+client 128.189.81.142:56723 {"client 128.189.81.142:56723":3}
+rpc connection started
+client 128.189.81.142:56723 {"client 128.189.81.142:56723":4}
+rpc chat server updated
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":4}
+client joined chat service successful
+client 128.189.81.142:56723 {"client 128.189.81.142:56723":5}
+received message from server
