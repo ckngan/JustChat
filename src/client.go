@@ -378,7 +378,7 @@ func getMessage() string {
 	consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		fmt.Print(editText(consoleUsername, 44, 1), ": ")
+		fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -536,6 +536,7 @@ func flushToConsole() {
 		}
 		close(messageChannel)
 	}()
+	return
 }
 
 // method to print the commands users can use

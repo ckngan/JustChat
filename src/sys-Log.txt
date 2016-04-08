@@ -379,3 +379,59 @@ client 128.189.81.142:56723 {"client 128.189.81.142:56723":5}
 received message from server
 =======
 received message from server
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":5}
+new storage node online
+ 
+=== Execution #30  ===
+client 128.189.81.142:56845 {"client 128.189.81.142:56845":1}
+Client was initialized
+client 128.189.81.142:56845 {"client 128.189.81.142:56845":2}
+connected to a loadBalancer
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":6}
+rpc client connection started
+client 128.189.81.142:56845 {"client 128.189.81.142:56845":3}
+rpc connection started
+client 128.189.81.142:56845 {"client 128.189.81.142:56845":4}
+rpc chat server updated
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":7}
+client joined chat service successful
+client 128.189.81.142:56845 {"client 128.189.81.142:56845":5}
+received message from server
+ 
+=== Execution #31  ===
+client 128.189.81.142:56866 {"client 128.189.81.142:56866":1}
+Client was initialized
+client 128.189.81.142:56866 {"client 128.189.81.142:56866":2}
+connected to a loadBalancer
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":8}
+rpc client connection started
+client 128.189.81.142:56866 {"client 128.189.81.142:56866":3}
+rpc connection started
+client 128.189.81.142:56866 {"client 128.189.81.142:56866":4}
+rpc chat server updated
+lb 128.189.81.142:56707 {"lb 128.189.81.142:56707":9}
+client joined chat service successful
+client 128.189.81.142:56866 {"client 128.189.81.142:56866":5}
+received message from server
+ 
+=== Execution #32  ===
+lb 128.189.81.142:56948 {"lb 128.189.81.142:56948":1}
+LB was initialized
+ 
+=== Execution #33  ===
+client 128.189.81.142:56956 {"client 128.189.81.142:56956":1}
+Client was initialized
+client 128.189.81.142:56956 {"client 128.189.81.142:56956":2}
+connected to a loadBalancer
+lb 128.189.81.142:56948 {"lb 128.189.81.142:56948":2}
+rpc client connection started
+client 128.189.81.142:56956 {"client 128.189.81.142:56956":3}
+rpc connection started
+lb 128.189.81.142:56948 {"lb 128.189.81.142:56948":3}
+new storage node online
+client 128.189.81.142:56956 {"client 128.189.81.142:56956":4}
+rpc chat server updated
+lb 128.189.81.142:56948 {"lb 128.189.81.142:56948":4}
+client joined chat service successful
+client 128.189.81.142:56956 {"client 128.189.81.142:56956":5}
+received message from server
