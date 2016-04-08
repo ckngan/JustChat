@@ -50,6 +50,11 @@ type ClientRequest struct {
 	RpcAddress        string // RpcAddress of the client making the request
 }
 
+type ClientInfo struct {
+	UserName   string
+	RPC_IPPORT string
+}
+
 //Retrun to client
 type ServerReply struct {
 	Message string
@@ -216,8 +221,8 @@ func main() {
 	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
 	// Create log
-	Logger = govec.InitializeMutipleExecutions("client " + clientRpcAddress, "sys")
-	Logger.LogThis("Client was initialized", "client " + clientRpcAddress, "{\"client " + clientRpcAddress + "\":1}")
+	Logger = govec.InitializeMutipleExecutions("client "+clientRpcAddress, "sys")
+	Logger.LogThis("Client was initialized", "client "+clientRpcAddress, "{\"client "+clientRpcAddress+"\":1}")
 
 	// go routine to start rpc connection for client
 	go func() {
@@ -294,12 +299,24 @@ func startupChatConnection() {
 			fmt.Println("\n\n", editText("<--------------------- Welcome to"+
 				" JustChat --------------------->", 35, 1))
 			username = uname
+			initChatServerConnection()
 			break
 		} else {
 			fmt.Println(editText("Username name already taken\n", 31, 1))
 		}
 	}
 	return
+}
+
+func initChatServerConnection() {
+	var reply ServerReply
+	var info ClientInfo
+
+	info.UserName = username
+	info.RPC_IPPORT = clientRpcAddress
+
+	err := chatServer.Call("MessageService.ConnectionInit", info, &reply)
+	checkError(err)
 }
 
 // Method to get client's username
@@ -354,10 +371,10 @@ func getDownloadDirectory() string {
 	flushToConsole()
 	// Reading input from user for download
 	filename := ""
-	command := "Please enter download directory to receive file"
+	command := "Please enter download directory to receive file:"
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText(command, 44, 1), ": ")
+		fmt.Print(editText(command, 44, 1), " ")
 		inputMsg, _ := reader.ReadString('\n')
 		filename = inputMsg
 		if len(filename) > 0 {
@@ -375,8 +392,10 @@ func getMessage() string {
 
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
+	consoleUsername := strings.Split(username, "\n")[0]
+
 	for {
-		fmt.Print(editText(username, 44, 1), ": ")
+		fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -391,7 +410,7 @@ func getMessage() string {
 // Method to handle all chat input from client
 func chat() {
 	for {
-		flushToConsole()
+		//flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
 
 		message := getMessage()
@@ -400,43 +419,47 @@ func chat() {
 	}
 }
 
-// method to return rpc method to call
+// method to filter messages and then send
+// TODO:
 func filterAndSendMessage(msg []string) {
 
 	var reply ServerReply
 	var sendMsg ClientMessage
 
 	command := msg[0]
-	if len(msg) == 0 {
+	if len(msg) == 1 {
 		sendMsg.Message = command
 		sendMsg.UserName = username
+		consoleUsername := strings.Split(username, "\n")[0]
+		messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
 		// do something with reply
-	} else if len(msg) == 2 {
-		if command == "share" {
-			sendPublicFile(msg[1])
-		} else {
-			fmt.Println("Incorrect command!!!!!")
-			messageCommands()
-			return
-		}
+		messageChannel <- reply.Message
+
 	} else if len(msg) == 3 {
+		command = strings.TrimSpace(msg[1])
 		if command == "share" {
-			sendPrivateFile(msg[1], msg[2])
-		} else if command == "message" {
-			sendPrivateMessage(msg[1], msg[2])
+			sendPublicFile(strings.TrimSpace(msg[2]))
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
 			return
 		}
-	} else {
-		fmt.Println("Incorrect command!!!!!")
-		messageCommands()
-		return
+	} else if len(msg) == 4 {
+		command = strings.TrimSpace(msg[1])
+		user := strings.TrimSpace(msg[2])
+		message := strings.TrimSpace(msg[3])
+		if command == "share" {
+			sendPrivateFile(user, message)
+		} else if command == "message" {
+			sendPrivateMessage(user, message)
+		} else {
+			fmt.Println("Incorrect command!!!!!")
+			messageCommands()
+			return
+		}
 	}
-	return
 }
 
 // err := chatServer.Call("MessageService.SendPublicFile", sendMsg, &reply)
@@ -520,9 +543,18 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 
 // Method to print messages to console in order of receipt
 func flushToConsole() {
-	for m := range messageChannel {
-		fmt.Println(m)
-	}
+	go func() {
+		for {
+			select {
+			case message := <-messageChannel:
+				fmt.Println(message)
+			default:
+				break
+			}
+		}
+		close(messageChannel)
+	}()
+	return
 }
 
 // method to print the commands users can use
@@ -551,7 +583,7 @@ func messageCommands() {
 	fmt.Printf("%s ==> %2s\n", privateMessage1, message1)
 	fmt.Printf("   %s ==> %2s\n", privateMessage2, message2)
 	fmt.Printf("    %s ==> %2s\n", publicMessage1, message3)
-	fmt.Printf("    %s ==> %2s\n", commands, message4)
+	fmt.Printf("       %s ==> %2s\n", commands, message4)
 	fmt.Printf(editText("<----------------------------------------------------------------->\n\n", color2, 1))
 	fmt.Printf(editText("<--------------------------Start Chatting------------------------->\n", 35, 1))
 

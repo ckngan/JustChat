@@ -69,15 +69,6 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *ServerReply) e
 	return nil
 }
 
-//Function to receive File from Storage Server
-func (nodeSvc *NodeService) StoreKFile(message *FileData, reply *ServerReply) error {
-	//redistribute the file to k-1 servers, where k is the replication factor.
-	//just send it to the first k-1, it doesnt matter LOL
-	//call the RPC method StoreFile (which hasn't been implemented yet lol)
-	return nil
-}
-
-
 
 Storage/Main server API
 
@@ -86,19 +77,14 @@ Storage/Main server API
 //Function to join storage server
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply)
 
-//Function for clients to send a message to the chat service
-func (msgSvc *MessageService) SendMessage(message *ClientMessage, reply *ServerReply)
-
 // send public message, server handles distribution
 func (msgSvc *MessageService) SendPublicMessage(message *ClientMessage, reply *ServerReply)
 
 // send public file, server handles distribution
 func (msgSvc *MessageService) SendPublicFile(message *FileData, reply *ServerReply)
 
-// Returns the ip address of the client to send private message to
-func (msgSvc *MessageService) SendPrivateMessage(message *ClientMessage, reply *ServerReply)
+// Returns the ip address of the client to send private data
+func (msgSvc *MessageService) SendPrivate(message *ClientMessage, reply *ServerReply)
 
-// Returns the ip:port address of the client to send private file to
-func (msgSvc *MessageService) SendPrivateFile(message *ClientMessage, reply *ServerReply)
-
-The End.
+// retrives specified file
+func (nodeSvc *NodeService) GetFile(args *FileData, reply *ServerReply)
