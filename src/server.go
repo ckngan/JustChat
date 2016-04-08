@@ -579,6 +579,7 @@ func notifyServersOfNewNode(newNode NewNodeSetup){
 		if err == nil {
 		fmt.Println("we received a reply from the server: ", reply.Message)
 		}
+		systemService.Close()
         }
 		next = (*next).NextServer
 	}
