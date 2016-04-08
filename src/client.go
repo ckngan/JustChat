@@ -311,14 +311,11 @@ func startupChatConnection() {
 func initChatServerConnection() {
 	var reply ServerReply
 	var info ClientInfo
-	// Advertise to chat server i'm a new client
-	initChat, err := rpc.Dial("tcp", NewRpcChatServer)
-	checkError(err)
 
 	info.UserName = username
 	info.RPC_IPPORT = clientRpcAddress
 
-	err = initChat.Call("MessageService.ConnectionInit", info, &reply)
+	err := chatServer.Call("MessageService.ConnectionInit", info, &reply)
 	checkError(err)
 }
 

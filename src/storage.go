@@ -74,16 +74,15 @@ type FileData struct {
 //Client object
 type ClientItem struct {
 	Username   string
-	RPC_IPPORT   string
+	RPC_IPPORT string
 	NextClient *ClientItem
 }
 
 //cient info
 type ClientInfo struct {
-	UserName string
+	UserName   string
 	RPC_IPPORT string
 }
-
 
 //GLOBALS
 var LOAD_BALANCER_IPPORT string
@@ -95,7 +94,6 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
-
 
 //****************************BACK-END RPC METHODS***********************************//
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
@@ -111,9 +109,9 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	println("We received a new message")
 	println("username: " + args.UserName + " Message: " + args.Message)
-	message:= ClientMessage{
-		UserName : args.UserName,
-		Message : args.Message}
+	message := ClientMessage{
+		UserName: args.UserName,
+		Message:  args.Message}
 	clientListMutex.Lock()
 	sendPublicMsgClients(message)
 	clientListMutex.Unlock()
@@ -149,20 +147,17 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 	return nil
 }
 
-
-
 //***********************CLIENT RPC METHODS **********************************************//
 //method for joining the storage node
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
-		println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
-		println("Size of client list: ",sizeOfClientList())
-		addClient(message.UserName,message.RPC_IPPORT)
-		println("New Size of client list: ",sizeOfClientList())
-		println("NewUser is: ", clientList.Username)
+	println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
+	println("Size of client list: ", sizeOfClientList())
+	addClient(message.UserName, message.RPC_IPPORT)
+	println("New Size of client list: ", sizeOfClientList())
+	println("NewUser is: ", clientList.Username)
 	reply.Message = "success"
 	return nil
 }
-
 
 // method for public message transfer
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
@@ -171,7 +166,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	message := ClientMessage{
 		UserName: args.UserName,
-		Message: args.Message}
+		Message:  args.Message}
 
 	serverListMutex.Lock()
 	sendPublicMsgServers(message)
@@ -200,7 +195,6 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply) e
 	return nil
 }
 
-
 func main() {
 	////////////////////////////////////////////////////////////////////////////////////////
 	// PARSE ARGS
@@ -218,9 +212,8 @@ func main() {
 	serverListMutex = &sync.Mutex{}
 	clientListMutex = &sync.Mutex{}
 	clientList = nil
- 	////////////////////////////////////////////////////////////////////////////////////////
- 	// LOAD BALANCER tcp.rpc
-
+	////////////////////////////////////////////////////////////////////////////////////////
+	// LOAD BALANCER tcp.rpc
 
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
@@ -259,7 +252,7 @@ func main() {
 	joinStorageServers()
 
 	//this is for testing but shoulh be locked
-	x :=sizeOfServerList()
+	x := sizeOfServerList()
 
 	println("WE RECEIVED A LIST OF SIZE: ", x)
 	//println("This is the first item in the list: ", serverList.UDP_IPPORT)
@@ -278,11 +271,9 @@ func main() {
 	///////////////////////////////////////////////////////////
 	fmt.Println("type of: ", reflect.TypeOf(RECEIVE_PING_ADDR))
 
-
-
 	//TESTING SENDPUBLICMSG
 
-println("END UDP STUFF")
+	println("END UDP STUFF")
 
 	systemService, err := rpc.Dial("tcp", RPC_CLIENT_IPPORT)
 	checkError(err)
@@ -291,14 +282,13 @@ println("END UDP STUFF")
 
 	clientMessage := ClientMessage{
 		UserName: "dude",
-		Message: "this chat system sucks"}
+		Message:  "this chat system sucks"}
 
 	err = systemService.Call("NodeService.SendPublicMsg", clientMessage, &reply)
 	checkError(err)
 	fmt.Println("we received a reply from the server: ", reply.Message)
 
-
-//////////////////////////////////////////////
+	//////////////////////////////////////////////
 	go initPingServers(PingAddr)
 	UDPService(ListenConn)
 
@@ -366,11 +356,11 @@ func deleteServerFromList(udp string) {
 					} else if (*inner).UDP_IPPORT == next.UDP_IPPORT {
 						serverList = (*inner).NextServer
 						return
-					}//else if ((*inner).NextServer.UDP_IPPORT == next.UDP_IPPORT && next.NextServer == nil){
+					} //else if ((*inner).NextServer.UDP_IPPORT == next.UDP_IPPORT && next.NextServer == nil){
 					//	(*inner).NextServer = nil
 					//}
 					//println("this isnt part of the plan")
-						inner = (*inner).NextServer
+					inner = (*inner).NextServer
 				}
 			}
 
@@ -387,42 +377,42 @@ func deleteServerFromList(udp string) {
 * cycles through list of connected servers and pings them to make sure theyre still active
  */
 
-func initPingServers(LocalAddr *net.UDPAddr){
-for{
-	serverListMutex.Lock()
-	next := serverList
-	serverListMutex.Unlock()
-	for next != nil {
-			ServerAddr,err := net.ResolveUDPAddr("udp",(*next).UDP_IPPORT)
-    		checkError(err)
-    		Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
-    		checkError(err)
-    		dead := pingServer(Conn, 0)
+func initPingServers(LocalAddr *net.UDPAddr) {
+	for {
+		serverListMutex.Lock()
+		next := serverList
+		serverListMutex.Unlock()
+		for next != nil {
+			ServerAddr, err := net.ResolveUDPAddr("udp", (*next).UDP_IPPORT)
+			checkError(err)
+			Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
+			checkError(err)
+			dead := pingServer(Conn, 0)
 
-    		if dead {
-					println("Assume node", (*next).UDP_IPPORT," is dead!!!! HANDLE THAT SHIT")
-					serverListMutex.Lock()
-					n := sizeOfServerList()
-					println("Size of list ", n)
-					deleteServerFromList((*next).UDP_IPPORT)
-					n = sizeOfServerList()
-					serverListMutex.Unlock()
-					println("Size of list ", n)
+			if dead {
+				println("Assume node", (*next).UDP_IPPORT, " is dead!!!! HANDLE THAT SHIT")
+				serverListMutex.Lock()
+				n := sizeOfServerList()
+				println("Size of list ", n)
+				deleteServerFromList((*next).UDP_IPPORT)
+				n = sizeOfServerList()
+				serverListMutex.Unlock()
+				println("Size of list ", n)
 
-					println("This is what's in list of servers: ", serverList.UDP_IPPORT)
-    			}else{
-    				println("Node ", (*next).UDP_IPPORT, " is alive :D")
-    			}
+				println("This is what's in list of servers: ", serverList.UDP_IPPORT)
+			} else {
+				println("Node ", (*next).UDP_IPPORT, " is alive :D")
+			}
 
 			next = (*next).NextServer
 		}
 
-	println("Starting timer")
-	timer1 := time.NewTimer(time.Second * 10)
-	<-timer1.C
-	println("Timer's up")
+		println("Starting timer")
+		timer1 := time.NewTimer(time.Second * 10)
+		<-timer1.C
+		println("Timer's up")
 
-}
+	}
 
 }
 
@@ -609,8 +599,7 @@ func isNewNode(ident string) bool {
 	return true
 }
 
-
-func sizeOfServerList() (total int){
+func sizeOfServerList() (total int) {
 
 	next := serverList
 	total = 0
@@ -622,10 +611,9 @@ func sizeOfServerList() (total int){
 	return
 }
 
-
 /*
 * Add A node to our linked list of clients
-*/
+ */
 func addClient(username string, rpc string) {
 
 	clientListMutex.Lock()
@@ -639,16 +627,16 @@ func addClient(username string, rpc string) {
 			newNode.NextClient = clientList
 			clientList = newNode
 		}
-	}else{
+	} else {
 
 		println("updating client in list")
 		next := clientList
 		for next != nil {
-		if (*next).Username == username {
-			(*next).RPC_IPPORT = rpc
-			break
-		}
-		next = (*next).NextClient
+			if (*next).Username == username {
+				(*next).RPC_IPPORT = rpc
+				break
+			}
+			next = (*next).NextClient
 		}
 
 	}
@@ -671,7 +659,7 @@ func isNewClient(ident string) bool {
 	return true
 }
 
-func sizeOfClientList() (total int){
+func sizeOfClientList() (total int) {
 
 	next := clientList
 	total = 0
@@ -682,7 +670,6 @@ func sizeOfClientList() (total int){
 
 	return
 }
-
 
 /*
 func isActive(rpc string)(bool){
@@ -697,52 +684,51 @@ func isActive(rpc string)(bool){
 }
 */
 
-func sendPublicMsgServers(message ClientMessage){
+func sendPublicMsgServers(message ClientMessage) {
 	next := serverList
 
 	for next != nil {
-		if((*next).UDP_IPPORT != RECEIVE_PING_ADDR){
+		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 			//checkError(err)
 			if err != nil {
-				println("SendPublicMsg To Servers: Server ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
 				//it's dead but the ping will eventually take care of it
-        	} else {
+			} else {
 				var reply ServerReply
 				err = systemService.Call("NodeService.SendPublicMsg", message, &reply)
 				checkError(err)
 				if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
+					fmt.Println("we received a reply from the server: ", reply.Message)
 				}
 				systemService.Close()
-        	}
-        }
+			}
+		}
 		next = (*next).NextServer
 	}
 }
 
-
-func sendPublicMsgClients(message ClientMessage){
+func sendPublicMsgClients(message ClientMessage) {
 	next := clientList
 
 	for next != nil {
-		if((*next).Username != message.UserName){
+		if (*next).Username != message.UserName {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 			//checkError(err)
 			if err != nil {
-				println("SendPublicMsg To Clients: Client ",(*next).Username," isn't accepting tcp conns so skip it... ")
+				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
 				//it's dead but the ping will eventually take care of it
-        	} else {
+			} else {
 				var reply ServerReply
-				err = systemService.Call("MessageService.SendPublicMsg", message, &reply)
+				// client api uses ClientMessageService
+				err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
 				checkError(err)
 				if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
+					fmt.Println("we received a reply from the server: ", reply.Message)
 				}
 				systemService.Close()
-        	}
-        }
+			}
+		}
 		next = (*next).NextClient
 	}
 }
-
