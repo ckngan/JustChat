@@ -479,7 +479,7 @@ func sendPublicFile(filepath string) {
 	fileData.FileName = filename
 	fileData.Data = make([]byte, fileData.FileSize)
 
-	_, _ = r.Write(fileData.Data)
+	_, _ = r.Read(fileData.Data)
 	err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
 	checkError(err)
 	r.Close()
