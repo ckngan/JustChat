@@ -131,8 +131,8 @@ func main() {
 	nodeConnAdress = os.Args[2]
 	heartbeatAddr = os.Args[3]
 
-	LBServers = []LoadBalancer{ LoadBalancer{"127.0.0.1:10001", "offline"}, 
-								LoadBalancer{"127.0.0.1:10002", "offline"}, 
+	LBServers = []LoadBalancer{ LoadBalancer{"127.0.0.1:10001", "offline"},
+								LoadBalancer{"127.0.0.1:10002", "offline"},
 								LoadBalancer{"127.0.0.1:10003", "offline"}}
 
 	////Print out address information
@@ -258,7 +258,7 @@ func getInfoFromFirstLB() {
 	var lbReply LBDataReply
 
 	conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
-	
+
 	if(lbReply.clients != nil){
 		println(lbReply.clients.username)
 	}
@@ -285,7 +285,7 @@ func initializeLB() {
 		}
 
 
-		
+
 		i++
 	}
 
@@ -383,7 +383,7 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 
 	//TODO: need restart implementation
 
-	
+
 
 	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
 
@@ -432,7 +432,7 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 
 	nodeConditional.L.Unlock()
 	clientConditional.L.Unlock()
-	
+
 	return nil
 }
 
@@ -453,15 +453,17 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT)
 	}
 
+	newNode := NewNodeSetup{
+		RPC_CLIENT_IPPORT: message.RPC_CLIENT_IPPORT,
+		RPC_SERVER_IPPORT: message.RPC_SERVER_IPPORT,
+		UDP_IPPORT: message.UDP_IPPORT}
 
+	notifyServersOfNewNode(newNode)
 	reply.ListOfNodes = serverList
-
 	Logger.LogLocalEvent("new storage node online")
-
 
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
-
 	return nil
 }
 
@@ -494,7 +496,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		var rpcUpdateMessage ChatServer
 
 		//Dial and update the client with their server address
-		
+
 		selectedServer, selectionError := getServerForCLient()
 		if selectionError != nil {
 			println(selectionError.Error())
@@ -502,7 +504,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 		rpcUpdateMessage.ServerName = "Server X"
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
-		
+
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
@@ -557,4 +559,27 @@ func printOutAllClients() {
 	}
 
 	return
+}
+
+func notifyServersOfNewNode(newNode NewNodeSetup){
+
+		next := serverList
+
+	for next != nil {
+		systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+		//checkError(err)
+		if err != nil {
+			println("Notfifying nodes of new node: Node ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+			//it's dead but the ping will eventually take care of it
+        } else {
+		var reply ServerReply
+
+		err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
+		checkError(err)
+		if err == nil {
+		fmt.Println("we received a reply from the server: ", reply.Message)
+		}
+        }
+		next = (*next).NextServer
+	}
 }

@@ -287,7 +287,7 @@ println("END UDP STUFF")
 
 
 //////////////////////////////////////////////
-	go pingServers(PingAddr)
+	go initPingServers(PingAddr)
 	UDPService(ListenConn)
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -375,12 +375,8 @@ func deleteServerFromList(udp string) {
 * cycles through list of connected servers and pings them to make sure theyre still active
  */
 
-func pingServers(LocalAddr *net.UDPAddr){
+func initPingServers(LocalAddr *net.UDPAddr){
 for{
-
-	timer1 := time.NewTimer(time.Second * 10)
-	<-timer1.C
-
 	serverListMutex.Lock()
 	next := serverList
 	serverListMutex.Unlock()
@@ -402,10 +398,18 @@ for{
 					println("Size of list ", n)
 
 					println("This is what's in list of servers: ", serverList.UDP_IPPORT)
+    			}else{
+    				println("Node ", (*next).UDP_IPPORT, " is alive :D")
     			}
 
 			next = (*next).NextServer
 		}
+
+	println("Starting timer")
+	timer1 := time.NewTimer(time.Second * 10)
+	<-timer1.C
+	println("Timer's up")
+
 }
 
 }
@@ -569,7 +573,7 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 			serverList = newNode
 		}
 	}
-
+	println("we added the damn node")
 	serverListMutex.Unlock()
 	return
 }
@@ -648,3 +652,15 @@ func isNewClient(ident string) bool {
 	return true
 }
 
+/*
+func checkActive(rpc string)(bool){
+        conn, err := net.Dial("tcp", rpc)
+        if err != nil {
+                log.Println("Connection error:", err)
+          		return true
+        } else {
+                conn.Close()
+                return false
+        }
+}
+*/
