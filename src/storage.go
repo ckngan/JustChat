@@ -108,13 +108,17 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 	return nil
 }
 
-func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ValReply) error {
+func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	println("We received a new message")
 	println("username: " + args.UserName + " Message: " + args.Message)
-	//for each client currently connected
-		//send the message
+	message:= ClientMessage{
+		UserName : args.UserName,
+		Message : args.Message}
+	clientListMutex.Lock()
+	sendPublicMsgClients(message)
+	clientListMutex.Unlock()
 
-	reply.Val = "success"
+	reply.Message = "success"
 	return nil
 }
 
@@ -150,10 +154,11 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 //***********************CLIENT RPC METHODS **********************************************//
 //method for joining the storage node
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
-		println("someone wants to join us :D")
-	//create client node
-	//add to linked list
-	//
+		println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
+		println("Size of client list: ",sizeOfClientList())
+		addClient(message.UserName,message.RPC_IPPORT)
+		println("New Size of client list: ",sizeOfClientList())
+		println("NewUser is: ", clientList.Username)
 	reply.Message = "success"
 	return nil
 }
@@ -163,10 +168,17 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	println("We received a new message")
 	println("username: " + args.UserName + " Message: " + args.Message)
-	//for each node in serverList
-		//call their sendPublicMsg methid wth these args
-	//for each client currently connected
-		//send the message
+
+	message := ClientMessage{
+		UserName: args.UserName,
+		Message: args.Message}
+
+	serverListMutex.Lock()
+	sendPublicMsgServers(message)
+	serverListMutex.Unlock()
+	clientListMutex.Lock()
+	sendPublicMsgClients(message)
+	clientListMutex.Unlock()
 	reply.Message = "success"
 	return nil
 }
@@ -205,6 +217,7 @@ func main() {
 
 	serverListMutex = &sync.Mutex{}
 	clientListMutex = &sync.Mutex{}
+	clientList = nil
  	////////////////////////////////////////////////////////////////////////////////////////
  	// LOAD BALANCER tcp.rpc
 
@@ -265,8 +278,7 @@ func main() {
 	///////////////////////////////////////////////////////////
 	fmt.Println("type of: ", reflect.TypeOf(RECEIVE_PING_ADDR))
 
-	/////////////////FAKE CLIENT DATA
-///////////////////////////////////////////////
+
 
 	//TESTING SENDPUBLICMSG
 
@@ -275,7 +287,7 @@ println("END UDP STUFF")
 	systemService, err := rpc.Dial("tcp", RPC_CLIENT_IPPORT)
 	checkError(err)
 
-	var reply ValReply
+	var reply ServerReply
 
 	clientMessage := ClientMessage{
 		UserName: "dude",
@@ -283,7 +295,7 @@ println("END UDP STUFF")
 
 	err = systemService.Call("NodeService.SendPublicMsg", clientMessage, &reply)
 	checkError(err)
-	fmt.Println("we received a reply from the server: ", reply.Val)
+	fmt.Println("we received a reply from the server: ", reply.Message)
 
 
 //////////////////////////////////////////////
@@ -562,6 +574,11 @@ func joinStorageServers() {
 func addNode(udp string, clientRPC string, serverRPC string) {
 
 	serverListMutex.Lock()
+	if RECEIVE_PING_ADDR == udp {
+		println("we dont want to add ourselves :) ")
+		serverListMutex.Unlock()
+		return
+	}
 	if isNewNode(udp) {
 
 		newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
@@ -613,7 +630,7 @@ func addClient(username string, rpc string) {
 
 	clientListMutex.Lock()
 	if isNewClient(username) {
-
+		println("adding new client to list")
 		newNode := &ClientItem{username, rpc, nil}
 
 		if clientList == nil {
@@ -623,6 +640,8 @@ func addClient(username string, rpc string) {
 			clientList = newNode
 		}
 	}else{
+
+		println("updating client in list")
 		next := clientList
 		for next != nil {
 		if (*next).Username == username {
@@ -652,15 +671,78 @@ func isNewClient(ident string) bool {
 	return true
 }
 
+func sizeOfClientList() (total int){
+
+	next := clientList
+	total = 0
+	for next != nil {
+		total++
+		next = (*next).NextClient
+	}
+
+	return
+}
+
+
 /*
-func checkActive(rpc string)(bool){
+func isActive(rpc string)(bool){
         conn, err := net.Dial("tcp", rpc)
         if err != nil {
                 log.Println("Connection error:", err)
-          		return true
+          		return false
         } else {
                 conn.Close()
-                return false
+                return true
         }
 }
 */
+
+func sendPublicMsgServers(message ClientMessage){
+	next := serverList
+
+	for next != nil {
+		if((*next).UDP_IPPORT != RECEIVE_PING_ADDR){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicMsg", message, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextServer
+	}
+}
+
+
+func sendPublicMsgClients(message ClientMessage){
+	next := clientList
+
+	for next != nil {
+		if((*next).Username != message.UserName){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Clients: Client ",(*next).Username," isn't accepting tcp conns so skip it... ")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("MessageService.SendPublicMsg", message, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextClient
+	}
+}
+
