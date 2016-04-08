@@ -120,17 +120,30 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ServerRepl
 	return nil
 }
 
-func (nodeSvc *NodeService) SendPublicFile(args *ClientMessage, reply *ServerReply) error {
-	println("We received a new message")
-	println("username: " + args.UserName + " Message: " + args.Message)
-	//find file by name and user upload? and send it
-
+func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
+	println("We received a new File")
+	println("username: " + args.UserName + " FileName: " + args.FileName)
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	clientListMutex.Lock()
+	sendPublicFileClients(file)
+	clientListMutex.Unlock()
 	reply.Message = "success"
 	return nil
 }
 
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("YOU'VE BEEN CHOSEN TO STORE A FILE :D")
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	storeFile(file)
+
 	reply.Message = "success"
 	return nil
 }
@@ -150,11 +163,14 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 //***********************CLIENT RPC METHODS **********************************************//
 //method for joining the storage node
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
+
 	println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
-	println("Size of client list: ", sizeOfClientList())
-	addClient(message.UserName, message.RPC_IPPORT)
-	println("New Size of client list: ", sizeOfClientList())
+	println("Size of client list: ",sizeOfClientList())
+	addClient(message.UserName,message.RPC_IPPORT)
+	println("New Size of client list: ",sizeOfClientList())
 	println("NewUser is: ", clientList.Username)
+	//TODO: STORE USER DATA
+
 	reply.Message = "success"
 	return nil
 }
@@ -174,6 +190,8 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 	clientListMutex.Lock()
 	sendPublicMsgClients(message)
 	clientListMutex.Unlock()
+
+	//TODO:send to k other servers to STORE
 	reply.Message = "success"
 	return nil
 }
@@ -182,6 +200,22 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new file")
 	println("username: " + args.UserName + "filename:" + args.FileName)
+
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	storeFile(file)
+
+	serverListMutex.Lock()
+	sendPublicFileServers(file)
+	serverListMutex.Unlock()
+	clientListMutex.Lock()
+	sendPublicFileClients(file)
+	clientListMutex.Unlock()
+	//store in k-1 other servers and keep track
+
 	reply.Message = "success"
 	return nil
 }
@@ -552,7 +586,7 @@ func joinStorageServers() {
 	checkError(err)
 
 	list:=reply.ListOfNodes
-	
+
 	i := list
 	println("\nNodes So Far")
 	for (i != nil){
@@ -741,3 +775,68 @@ func sendPublicMsgClients(message ClientMessage) {
 		next = (*next).NextClient
 	}
 }
+
+
+func storeFile(file FileData){
+
+ path := "../Files/"+file.UserName+"/"
+ err := os.MkdirAll(path, 0777)
+    checkError(err)
+ println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
+ f, er := os.Create(path+file.FileName)
+    checkError(er)
+ n, error := f.Write(file.Data)
+ 	checkError(error)
+println("bytes written to file: ", n)
+f.Close()
+}
+
+func sendPublicFileServers(file FileData){
+	next := serverList
+
+	for next != nil {
+		if((*next).UDP_IPPORT != RECEIVE_PING_ADDR){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextServer
+	}
+}
+
+func sendPublicFileClients(file FileData){
+	next := clientList
+
+	for next != nil {
+		if((*next).Username != file.UserName){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Clients: Client ",(*next).Username," isn't accepting tcp conns so skip it... ")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextClient
+	}
+}
+
+
