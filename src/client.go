@@ -418,30 +418,31 @@ func filterAndSendMessage(msg []string) {
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
 		// do something with reply
-	} else if len(msg) == 2 {
-		if command == "share" {
-			sendPublicFile(msg[1])
-		} else {
-			fmt.Println("Incorrect command!!!!!")
-			messageCommands()
-			return
-		}
+		messageChannel <- reply.Message
+
 	} else if len(msg) == 3 {
+		command = strings.TrimSpace(msg[1])
 		if command == "share" {
-			sendPrivateFile(msg[1], msg[2])
-		} else if command == "message" {
-			sendPrivateMessage(msg[1], msg[2])
+			sendPublicFile(strings.TrimSpace(msg[2]))
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
 			return
 		}
-	} else {
-		fmt.Println("Incorrect command!!!!!")
-		messageCommands()
-		return
+	} else if len(msg) == 4 {
+		command = strings.TrimSpace(msg[1])
+		user := strings.TrimSpace(msg[2])
+		message := strings.TrimSpace(msg[3])
+		if command == "share" {
+			sendPrivateFile(user, message)
+		} else if command == "message" {
+			sendPrivateMessage(user, message)
+		} else {
+			fmt.Println("Incorrect command!!!!!")
+			messageCommands()
+			return
+		}
 	}
-	return
 }
 
 // err := chatServer.Call("MessageService.SendPublicFile", sendMsg, &reply)
