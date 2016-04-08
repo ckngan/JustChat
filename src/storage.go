@@ -149,11 +149,13 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 
 //***********************CLIENT RPC METHODS **********************************************//
 //method for joining the storage node
-func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply){
+func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
+		println("someone wants to join us :D")
 	//create client node
 	//add to linked list
 	//
 	reply.Message = "success"
+	return nil
 }
 
 
@@ -211,7 +213,7 @@ func main() {
 	rpc.Register(nodeService)
 	c := make(chan int)
 	go func() {
-		systemListenServe(SEND_PING_IPPORT, c)
+		systemListenServe("localhost:0", c)
 	}()
 	RPC_system_port := <-c
 	RPC_SYSTEM_IPPORT = "localhost" + ":" + strconv.Itoa(RPC_system_port)
@@ -270,7 +272,7 @@ func main() {
 
 println("END UDP STUFF")
 
-	systemService, err := rpc.Dial("tcp", SEND_PING_IPPORT)
+	systemService, err := rpc.Dial("tcp", RPC_CLIENT_IPPORT)
 	checkError(err)
 
 	var reply ValReply
