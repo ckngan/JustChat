@@ -520,3 +520,101 @@ client 128.189.218.189:61126 {"client 128.189.218.189:61126":4}
 rpc chat server updated
 client 128.189.218.189:61126 {"client 128.189.218.189:61126":5}
 received message from server
+ 
+=== Execution #33  ===
+lb [::]:61265 {"lb [::]:61265":1}
+LB was initialized
+ 
+=== Execution #34  ===
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":1}
+Client was initialized
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":2}
+connected to a loadBalancer
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":3}
+rpc connection started
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":4}
+rpc chat server updated
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":5}
+received message from server
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":6}
+rpc connection started
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":7}
+client received global message
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":8}
+rpc connection started
+client 128.189.218.189:61277 {"client 128.189.218.189:61277":9}
+client received global message
+lb [::]:61265 {"lb [::]:61265":2}
+new storage node online
+ 
+=== Execution #35  ===
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":1}
+Client was initialized
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":2}
+connected to a loadBalancer
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":3}
+received message from server
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":4}
+rpc connection started
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":5}
+rpc chat server updated
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":6}
+received message from server
+client 128.189.218.189:61342 {"client 128.189.218.189:61342":7}
+rpc connection started
+ 
+=== Execution #36  ===
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":1}
+Client was initialized
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":2}
+connected to a loadBalancer
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":3}
+rpc connection started
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":4}
+rpc chat server updated
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":5}
+received message from server
+client 128.189.218.189:61374 {"client 128.189.218.189:61374":6}
+rpc connection started
+ 
+=== Execution #37  ===
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":1}
+Client was initialized
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":2}
+connected to a loadBalancer
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":3}
+rpc connection started
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":4}
+rpc chat server updated
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":5}
+received message from server
+client 128.189.218.189:61390 {"client 128.189.218.189:61390":6}
+rpc connection started
+lb [::]:61265 {"lb [::]:61265":3}
+new storage node online
+lb [::]:61265 {"lb [::]:61265":4}
+new storage node online
+lb [::]:61265 {"lb [::]:61265":5}
+new storage node online
+ 
+=== Execution #38  ===
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":1}
+Client was initialized
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":2}
+connected to a loadBalancer
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":3}
+rpc connection started
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":4}
+rpc chat server updated
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":5}
+received message from server
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":6}
+rpc connection started
+client 128.189.218.189:51716 {"client 128.189.218.189:51716":7}
+client received global message
+ 
+=== Execution #39  ===
+client 128.189.218.189:54878 {"client 128.189.218.189:54878":1}
+Client was initialized
+client 128.189.218.189:54878 {"client 128.189.218.189:54878":2}
+connected to a loadBalancer

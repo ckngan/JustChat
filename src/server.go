@@ -64,7 +64,7 @@ type ClientMessage struct {
 type ClockedClientMsg struct {
 	ClientMsg ClientMessage
 	ServerId  string
-	Clock     uint64
+	Clock     int
 }
 
 type ClientRequest struct {
