@@ -150,9 +150,9 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
-	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
+	messageOwner := editText(args.UserName, 33, 1)
 	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
-	output := messageOwner + ": " + messageBody
+	output := messageOwner + "--->" + messageBody
 	messageChannel <- output
 	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
@@ -465,6 +465,8 @@ func filterAndSendMessage(msg []string) {
 			sendPrivateFile(user, message)
 		} else if command == "message" {
 			sendPrivateMessage(user, message)
+		} else if command == "wow" {
+			fmt.Println("Hey")
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
