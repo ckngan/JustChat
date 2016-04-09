@@ -1,1150 +1,188 @@
- 
-=== Execution #1  ===
-lb [::]:63255 {"lb [::]:63255":1}
-LB was initialized
-lb [::]:63255 {"lb [::]:63255":2}
-new storage node online
-lb [::]:63255 {"lb [::]:63255":3}
-new storage node online
-lb [::]:63255 {"lb [::]:63255":4}
-new storage node online
+   
+=== Execution #1 ===
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":1}
+Initialization Complete
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":1}
+Client was initialized
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":7}
+rpc client connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":2}
+connected to a loadBalancer
  
 === Execution #2  ===
-lb [::]:49749 {"lb [::]:49749":1}
-LB was initialized
-lb [::]:49749 {"lb [::]:49749":2}
-new storage node online
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":1}
+Client was initialized
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":8}
+rpc client connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":2}
+connected to a loadBalancer
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":3}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":4}
+rpc chat server updated
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":9}
+client joined chat service successful
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":5}
+received message from server
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":3}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":4}
+rpc chat server updated
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":10}
+client joined chat service successful
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":5}
+received message from server
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":6}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":7}
+client received global message
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":6}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":7}
+client received global message
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":8}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":9}
+client received global message
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":8}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":9}
+client received global message
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":10}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":11}
+client received global message
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":10}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":11}
+client received global message
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":12}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":13}
+client received global message
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":12}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":13}
+client received global message
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":14}
+rpc connection started
+client 128.189.82.230:64686 {"client 128.189.82.230:64686":15}
+client received global message
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":14}
+rpc connection started
+client 128.189.82.230:64680 {"client 128.189.82.230:64680":15}
+client received global message
  
 === Execution #3  ===
-lb [::]:50261 {"lb [::]:50261":1}
-LB was initialized
-lb [::]:50261 {"lb [::]:50261":2}
-new storage node online
-lb [::]:50261 {"lb [::]:50261":3}
-new storage node online
-lb [::]:50261 {"lb [::]:50261":4}
-new storage node online
-lb [::]:50261 {"lb [::]:50261":5}
-new storage node online
+client 128.189.82.230:64985 {"client 128.189.82.230:64985":1}
+Client was initialized
+client 128.189.82.230:64985 {"client 128.189.82.230:64985":2}
+connected to a loadBalancer
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":11}
+rpc client connection started
  
 === Execution #4  ===
-lb [::]:51491 {"lb [::]:51491":1}
-LB was initialized
-lb [::]:51491 {"lb [::]:51491":2}
-new storage node online
-lb [::]:51491 {"lb [::]:51491":3}
-new storage node online
+client 128.189.82.230:64991 {"client 128.189.82.230:64991":1}
+Client was initialized
+client 128.189.82.230:64991 {"client 128.189.82.230:64991":2}
+connected to a loadBalancer
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":12}
+rpc client connection started
+client 128.189.82.230:64991 {"client 128.189.82.230:64991":3}
+rpc connection started
+client 128.189.82.230:64991 {"client 128.189.82.230:64991":4}
+rpc chat server updated
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":13}
+client joined chat service successful
+client 128.189.82.230:64991 {"client 128.189.82.230:64991":5}
+received message from server
  
 === Execution #5  ===
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":1}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":1}
 Client was initialized
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":2}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":2}
 connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":22}
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":14}
 rpc client connection started
  
 === Execution #6  ===
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":1}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":1}
 Client was initialized
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":23}
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":15}
 rpc client connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":3}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":2}
+connected to a loadBalancer
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":3}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":4}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":4}
 rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":24}
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":16}
 client joined chat service successful
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":5}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":5}
 received message from server
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":3}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":3}
+received message from server
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":4}
 rpc connection started
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":4}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":5}
 rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":25}
+lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":17}
 client joined chat service successful
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":5}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":6}
 received message from server
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":6}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":7}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":7}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":8}
 client received global message
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":6}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":6}
 rpc connection started
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":7}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":7}
 client received global message
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":8}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":9}
 rpc connection started
-client 192.168.0.107:53392 {"client 192.168.0.107:53392":9}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":10}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":8}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":8}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":9}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":9}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":10}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":11}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":11}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":12}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":12}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":10}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":13}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":11}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":14}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":13}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":15}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":14}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":16}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":12}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":17}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":13}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":18}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":15}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":19}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":16}
 client received global message
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":20}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":14}
 rpc connection started
-client 192.168.0.107:53398 {"client 192.168.0.107:53398":21}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":15}
 client received global message
- 
-=== Execution #7  ===
-client 192.168.0.107:53422 {"client 192.168.0.107:53422":1}
-Client was initialized
-client 192.168.0.107:53422 {"client 192.168.0.107:53422":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":26}
-rpc client connection started
- 
-=== Execution #8  ===
-client 192.168.0.107:53715 {"client 192.168.0.107:53715":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":27}
-rpc client connection started
-client 192.168.0.107:53715 {"client 192.168.0.107:53715":2}
-connected to a loadBalancer
- 
-=== Execution #9  ===
-client 192.168.0.107:53882 {"client 192.168.0.107:53882":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":28}
-rpc client connection started
-client 192.168.0.107:53882 {"client 192.168.0.107:53882":2}
-connected to a loadBalancer
- 
-=== Execution #10  ===
-client 192.168.0.107:53888 {"client 192.168.0.107:53888":1}
-Client was initialized
-client 192.168.0.107:53888 {"client 192.168.0.107:53888":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":29}
-rpc client connection started
- 
-=== Execution #11  ===
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":30}
-rpc client connection started
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":2}
-connected to a loadBalancer
- 
-=== Execution #12  ===
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":1}
-Client was initialized
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":31}
-rpc client connection started
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":3}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":17}
 rpc connection started
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":32}
-client joined chat service successful
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":5}
-received message from server
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":3}
-rpc connection started
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":33}
-client joined chat service successful
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":5}
-received message from server
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":6}
-rpc connection started
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":7}
-client received global message
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":6}
-rpc connection started
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":7}
-client received global message
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":8}
-rpc connection started
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":9}
-client received global message
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":10}
-rpc connection started
-client 192.168.0.107:54032 {"client 192.168.0.107:54032":11}
-client received global message
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":8}
-rpc connection started
-client 192.168.0.107:54026 {"client 192.168.0.107:54026":9}
-client received global message
- 
-=== Execution #13  ===
-client 192.168.0.107:54054 {"client 192.168.0.107:54054":1}
-Client was initialized
-client 192.168.0.107:54054 {"client 192.168.0.107:54054":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":34}
-rpc client connection started
- 
-=== Execution #14  ===
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":35}
-rpc client connection started
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":2}
-connected to a loadBalancer
- 
-=== Execution #15  ===
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":1}
-Client was initialized
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":36}
-rpc client connection started
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":3}
-rpc connection started
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":37}
-client joined chat service successful
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":5}
-received message from server
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":3}
-rpc connection started
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":38}
-client joined chat service successful
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":5}
-received message from server
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":6}
-rpc connection started
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":7}
-client received global message
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":6}
-rpc connection started
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":7}
-client received global message
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":8}
-rpc connection started
-client 192.168.0.107:55658 {"client 192.168.0.107:55658":9}
-client received global message
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":8}
-rpc connection started
-client 192.168.0.107:55664 {"client 192.168.0.107:55664":9}
-client received global message
- 
-=== Execution #16  ===
-client 192.168.0.107:55683 {"client 192.168.0.107:55683":1}
-Client was initialized
-client 192.168.0.107:55683 {"client 192.168.0.107:55683":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":39}
-rpc client connection started
- 
-=== Execution #17  ===
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":40}
-rpc client connection started
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":2}
-connected to a loadBalancer
- 
-=== Execution #18  ===
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":1}
-Client was initialized
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":41}
-rpc client connection started
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":3}
-rpc connection started
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":42}
-client joined chat service successful
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":5}
-received message from server
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":3}
-rpc connection started
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":43}
-client joined chat service successful
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":5}
-received message from server
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":6}
-rpc connection started
-client 192.168.0.107:55808 {"client 192.168.0.107:55808":7}
-client received global message
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":6}
-rpc connection started
-client 192.168.0.107:55802 {"client 192.168.0.107:55802":7}
-client received global message
- 
-=== Execution #19  ===
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":1}
-Client was initialized
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":44}
-rpc client connection started
- 
-=== Execution #20  ===
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":1}
-Client was initialized
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":45}
-rpc client connection started
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":3}
-rpc connection started
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":46}
-client joined chat service successful
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":5}
-received message from server
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":3}
-rpc connection started
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":47}
-client joined chat service successful
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":5}
-received message from server
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":6}
-rpc connection started
-client 192.168.0.107:55856 {"client 192.168.0.107:55856":7}
-client received global message
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":6}
-rpc connection started
-client 192.168.0.107:55850 {"client 192.168.0.107:55850":7}
-client received global message
- 
-=== Execution #21  ===
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":48}
-rpc client connection started
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":2}
-connected to a loadBalancer
- 
-=== Execution #22  ===
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":49}
-rpc client connection started
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":2}
-connected to a loadBalancer
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":3}
-rpc connection started
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":50}
-client joined chat service successful
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":5}
-received message from server
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":3}
-rpc connection started
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":51}
-client joined chat service successful
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":5}
-received message from server
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":6}
-rpc connection started
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":7}
-client received global message
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":6}
-rpc connection started
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":7}
-client received global message
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":8}
-rpc connection started
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":9}
-client received global message
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":8}
-rpc connection started
-client 192.168.0.107:55966 {"client 192.168.0.107:55966":9}
-client received global message
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":10}
-rpc connection started
-client 192.168.0.107:55972 {"client 192.168.0.107:55972":11}
-client received global message
- 
-=== Execution #23  ===
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":52}
-rpc client connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":2}
-connected to a loadBalancer
- 
-=== Execution #24  ===
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":1}
-Client was initialized
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":53}
-rpc client connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":3}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":54}
-client joined chat service successful
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":5}
-received message from server
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":3}
-rpc connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":55}
-client joined chat service successful
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":5}
-received message from server
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":6}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":7}
-client received global message
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":6}
-rpc connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":7}
-client received global message
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":8}
-rpc connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":9}
-client received global message
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":8}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":9}
-client received global message
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":10}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":11}
-client received global message
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":12}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":13}
-client received global message
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":14}
-rpc connection started
-client 192.168.0.107:56231 {"client 192.168.0.107:56231":15}
-client received global message
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":10}
-rpc connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":11}
-client received global message
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":12}
-rpc connection started
-client 192.168.0.107:56225 {"client 192.168.0.107:56225":13}
-client received global message
- 
-=== Execution #25  ===
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":56}
-rpc client connection started
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":2}
-connected to a loadBalancer
- 
-=== Execution #26  ===
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":1}
-Client was initialized
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":57}
-rpc client connection started
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":3}
-rpc connection started
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":58}
-client joined chat service successful
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":5}
-received message from server
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":3}
-rpc connection started
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":59}
-client joined chat service successful
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":5}
-received message from server
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":6}
-rpc connection started
-client 192.168.0.107:56297 {"client 192.168.0.107:56297":7}
-client received global message
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":6}
-rpc connection started
-client 192.168.0.107:56303 {"client 192.168.0.107:56303":7}
-client received global message
- 
-=== Execution #27  ===
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":60}
-rpc client connection started
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":2}
-connected to a loadBalancer
- 
-=== Execution #28  ===
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":61}
-rpc client connection started
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":2}
-connected to a loadBalancer
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":3}
-rpc connection started
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":62}
-client joined chat service successful
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":5}
-received message from server
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":3}
-rpc connection started
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":63}
-client joined chat service successful
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":5}
-received message from server
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":6}
-rpc connection started
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":7}
-client received global message
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":6}
-rpc connection started
-client 192.168.0.107:56491 {"client 192.168.0.107:56491":7}
-client received global message
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":8}
-rpc connection started
-client 192.168.0.107:56485 {"client 192.168.0.107:56485":9}
-client received global message
- 
-=== Execution #29  ===
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":1}
-Client was initialized
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":64}
-rpc client connection started
- 
-=== Execution #30  ===
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":65}
-rpc client connection started
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":2}
-connected to a loadBalancer
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":3}
-rpc connection started
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":66}
-client joined chat service successful
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":5}
-received message from server
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":3}
-rpc connection started
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":67}
-client joined chat service successful
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":5}
-received message from server
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":6}
-rpc connection started
-client 192.168.0.107:59287 {"client 192.168.0.107:59287":7}
-client received global message
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":6}
-rpc connection started
-client 192.168.0.107:59293 {"client 192.168.0.107:59293":7}
-client received global message
- 
-=== Execution #31  ===
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":68}
-rpc client connection started
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":2}
-connected to a loadBalancer
- 
-=== Execution #32  ===
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":69}
-rpc client connection started
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":2}
-connected to a loadBalancer
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":3}
-rpc connection started
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":70}
-client joined chat service successful
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":5}
-received message from server
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":3}
-rpc connection started
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":71}
-client joined chat service successful
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":5}
-received message from server
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":6}
-rpc connection started
-client 192.168.0.107:59849 {"client 192.168.0.107:59849":7}
-client received global message
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":6}
-rpc connection started
-client 192.168.0.107:59855 {"client 192.168.0.107:59855":7}
-client received global message
- 
-=== Execution #33  ===
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":72}
-rpc client connection started
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":2}
-connected to a loadBalancer
- 
-=== Execution #34  ===
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":1}
-Client was initialized
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":73}
-rpc client connection started
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":3}
-rpc connection started
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":74}
-client joined chat service successful
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":5}
-received message from server
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":3}
-received message from server
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":4}
-rpc connection started
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":5}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":75}
-client joined chat service successful
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":6}
-received message from server
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":6}
-rpc connection started
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":7}
-client received global message
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":7}
-rpc connection started
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":8}
-client received global message
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":9}
-rpc connection started
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":10}
-client received global message
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":8}
-rpc connection started
-client 192.168.0.107:60059 {"client 192.168.0.107:60059":9}
-client received global message
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":11}
-rpc connection started
-client 192.168.0.107:60065 {"client 192.168.0.107:60065":12}
-client received global message
- 
-=== Execution #35  ===
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":76}
-rpc client connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":2}
-connected to a loadBalancer
- 
-=== Execution #36  ===
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":1}
-Client was initialized
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":77}
-rpc client connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":3}
-rpc connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":78}
-client joined chat service successful
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":5}
-received message from server
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":3}
-rpc connection started
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":79}
-client joined chat service successful
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":5}
-received message from server
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":6}
-rpc connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":7}
-client received global message
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":6}
-rpc connection started
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":7}
-client received global message
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":8}
-rpc connection started
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":9}
-client received global message
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":8}
-rpc connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":9}
-client received global message
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":10}
-rpc connection started
-client 192.168.0.107:60153 {"client 192.168.0.107:60153":11}
-client received global message
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":10}
-rpc connection started
-client 192.168.0.107:60159 {"client 192.168.0.107:60159":11}
-client received global message
- 
-=== Execution #37  ===
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":1}
-Client was initialized
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":80}
-rpc client connection started
- 
-=== Execution #38  ===
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":1}
-Client was initialized
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":81}
-rpc client connection started
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":3}
-rpc connection started
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":82}
-client joined chat service successful
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":5}
-received message from server
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":3}
-rpc connection started
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":83}
-client joined chat service successful
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":5}
-received message from server
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":6}
-rpc connection started
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":7}
-client received global message
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":6}
-rpc connection started
-client 192.168.0.107:60283 {"client 192.168.0.107:60283":7}
-client received global message
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":8}
-rpc connection started
-client 192.168.0.107:60277 {"client 192.168.0.107:60277":9}
-client received global message
- 
-=== Execution #39  ===
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":84}
-rpc client connection started
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":2}
-connected to a loadBalancer
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":3}
-received message from server
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":4}
-rpc connection started
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":5}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":85}
-client joined chat service successful
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":6}
-received message from server
- 
-=== Execution #40  ===
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":1}
-Client was initialized
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":86}
-rpc client connection started
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":3}
-rpc connection started
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":87}
-client joined chat service successful
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":5}
-received message from server
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":7}
-rpc connection started
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":8}
-client received global message
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":9}
-rpc connection started
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":10}
-client received global message
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":6}
-rpc connection started
-client 192.168.0.107:60330 {"client 192.168.0.107:60330":7}
-client received global message
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":11}
-rpc connection started
-client 192.168.0.107:60319 {"client 192.168.0.107:60319":12}
-client received global message
- 
-=== Execution #41  ===
-client 192.168.0.107:60595 {"client 192.168.0.107:60595":1}
-Client was initialized
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":88}
-rpc client connection started
-client 192.168.0.107:60595 {"client 192.168.0.107:60595":2}
-connected to a loadBalancer
- 
-=== Execution #42  ===
-client 192.168.0.107:60601 {"client 192.168.0.107:60601":1}
-Client was initialized
-client 192.168.0.107:60601 {"client 192.168.0.107:60601":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":89}
-rpc client connection started
-client 192.168.0.107:60601 {"client 192.168.0.107:60601":3}
-rpc connection started
-client 192.168.0.107:60601 {"client 192.168.0.107:60601":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":90}
-client joined chat service successful
-client 192.168.0.107:60601 {"client 192.168.0.107:60601":5}
-received message from server
- 
-=== Execution #43  ===
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":1}
-Client was initialized
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":91}
-rpc client connection started
- 
-=== Execution #44  ===
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":1}
-Client was initialized
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":92}
-rpc client connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":3}
-rpc connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":93}
-client joined chat service successful
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":5}
-received message from server
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":3}
-rpc connection started
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":94}
-client joined chat service successful
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":5}
-received message from server
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":6}
-rpc connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":7}
-client received global message
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":6}
-rpc connection started
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":7}
-client received global message
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":8}
-rpc connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":9}
-client received global message
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":8}
-rpc connection started
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":9}
-client received global message
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":10}
-rpc connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":11}
-client received global message
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":10}
-rpc connection started
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":11}
-client received global message
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":12}
-rpc connection started
-client 192.168.0.107:60696 {"client 192.168.0.107:60696":13}
-client received global message
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":12}
-rpc connection started
-client 192.168.0.107:60702 {"client 192.168.0.107:60702":13}
-client received global message
- 
-=== Execution #45  ===
-client 128.189.82.230:63901 {"client 128.189.82.230:63901":1}
-Client was initialized
-client 128.189.82.230:63901 {"client 128.189.82.230:63901":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":95}
-rpc client connection started
- 
-=== Execution #46  ===
-client 128.189.82.230:63910 {"client 128.189.82.230:63910":1}
-Client was initialized
-client 128.189.82.230:63910 {"client 128.189.82.230:63910":2}
-connected to a loadBalancer
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":96}
-rpc client connection started
-client 128.189.82.230:63910 {"client 128.189.82.230:63910":3}
-rpc connection started
-client 128.189.82.230:63910 {"client 128.189.82.230:63910":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":97}
-client joined chat service successful
-client 128.189.82.230:63910 {"client 128.189.82.230:63910":5}
-received message from server
-client 128.189.82.230:63901 {"client 128.189.82.230:63901":3}
-rpc connection started
-client 128.189.82.230:63901 {"client 128.189.82.230:63901":4}
-rpc chat server updated
-lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":98}
-client joined chat service successful
-client 128.189.82.230:63901 {"client 128.189.82.230:63901":5}
-received message from server
- 
-=== Execution #47  ===
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":1}
-LB was initialized
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":2}
-new storage node online
- 
-=== Execution #48  ===
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":1}
-Client was initialized
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":3}
-rpc client connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":2}
-connected to a loadBalancer
- 
-=== Execution #49  ===
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":1}
-Client was initialized
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":4}
-rpc client connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":2}
-connected to a loadBalancer
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":3}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":4}
-rpc chat server updated
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":5}
-client joined chat service successful
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":5}
-received message from server
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":3}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":4}
-rpc chat server updated
-lb 128.189.82.230:63935 {"lb 128.189.82.230:63935":6}
-client joined chat service successful
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":5}
-received message from server
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":6}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":7}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":6}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":7}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":8}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":9}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":8}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":9}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":10}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":11}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":10}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":11}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":12}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":13}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":12}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":13}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":14}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":15}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":14}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":15}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":16}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":17}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":16}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":17}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":18}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":19}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":18}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":19}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":20}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":21}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":20}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":21}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":22}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":23}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":22}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":23}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":24}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":25}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":24}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":25}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":26}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":27}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":26}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":27}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":28}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":29}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":28}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":29}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":30}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":31}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":30}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":31}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":32}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":33}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":32}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":33}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":34}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":35}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":34}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":35}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":36}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":37}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":36}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":37}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":38}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":39}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":38}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":39}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":40}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":41}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":40}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":41}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":42}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":43}
-client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":42}
-rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":43}
-client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":44}
-rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":45}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":18}
 client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":44}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":16}
 rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":45}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":17}
 client received global message
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":46}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":19}
 rpc connection started
-client 128.189.82.230:63962 {"client 128.189.82.230:63962":47}
+client 128.189.82.230:65064 {"client 128.189.82.230:65064":20}
 client received global message
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":46}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":18}
 rpc connection started
-client 128.189.82.230:63968 {"client 128.189.82.230:63968":47}
+client 128.189.82.230:65072 {"client 128.189.82.230:65072":19}
 client received global message

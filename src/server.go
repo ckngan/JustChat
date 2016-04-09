@@ -25,10 +25,17 @@ type LBService int
 
 //Client object
 type ClientItem struct {
+<<<<<<< HEAD
 	username      string
 	password      string
 	currentServer string //this is the server's unique UDP_IPPORT string
 	nextClient    *ClientItem
+=======
+	Username   string
+	Password   string
+	CurrentServer string //this is the server's unique UDP_IPPORT string
+	NextClient *ClientItem
+>>>>>>> b457f5b9567e591c1ddcb0f7319d46a2d390bca4
 }
 
 type ServerItem struct {
@@ -91,12 +98,20 @@ type NodeReply struct {
 }
 
 type LBMessage struct {
-	message string
+	Message string
+	OnlineNumber int
 }
 
 type LBDataReply struct {
-	clients *ClientItem
-	nodes   *ServerItem
+	Clients *ClientItem
+	Nodes *ServerItem
+}
+
+type NodeToRemove struct {
+	Node *ServerItem
+}
+type LBReply struct {
+	Message string
 }
 
 /*
@@ -201,6 +216,8 @@ func main() {
 	}()
 
 	//Listener go function for other load balancers
+	lbServ := new(LBService)
+	rpc.Register(lbServ)
 	lBListener, _ := net.Listen("tcp", LBServers[lbDesignation].Address)
 	go func() {
 		for {
@@ -232,38 +249,71 @@ func main() {
 	}
 }
 
-/*
-	LOCAL HELPER FUNCTIONS
-*/
-type NodeToRemove struct {
-	Node *ServerItem
-}
-type LBReply struct {
-	Message string
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	      LOCAL HELPER FUNCTIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+func deleteNodeFromList(udpAddr string) {
+	//As every node is unique in its UDP address we can assume deletion after we find that address
+	//and return right away
+
+	//initialize variable
+	i := serverList
+
+	//if there are no servers, return
+	//Shouldn't happen, but just in case
+	if(i==nil){
+		return
+	}
+	//if i is the one we want to delete, remove it and return
+	if(i.UDP_IPPORT == udpAddr){
+		println("Deleting: ",i.UDP_IPPORT)
+		serverList = (*i).NextServer
+		return
+	}
+
+	//if i is not the one we want, search until it is found
+	j := (*i).NextServer
+
+	for(j != nil) {
+		//if found, delete
+		if(j.UDP_IPPORT == udpAddr){
+			println("Deleting: ",i.UDP_IPPORT)
+			(*i).NextServer = (*j).NextServer
+			return
+		}
+
+		i = (*i).NextServer
+		j = (*i).NextServer
+	}
+
+	return
 }
 
-func heartbeetCheck() {
+func heartbeetCheck(){
 	for {
-		time.Sleep(2 * time.Second)
-		if serverList == nil {
+		time.Sleep(1 * time.Second)
+		nodeConditional.L.Lock()
+		if(serverList == nil){
 			println("No Servers")
 		} else {
-			time.Sleep(20 * time.Second)
-			_, err := rpc.Dial("tcp", serverList.RPC_SERVER_IPPORT)
-			if err != nil {
-				println("Error: ", err.Error())
-			} else {
-				println("Connected to Node")
+			i := serverList
+			for (i != nil) {
+				_, err := rpc.Dial("tcp", i.RPC_SERVER_IPPORT)
+				if (err != nil){
+					//assume node is dead
+					println("He's Dead Jim!")
+					deleteNodeFromList(i.UDP_IPPORT)
+				} else {
+					println("Connected to Node")
+				}
+
+				i = (*i).NextServer
 			}
-			//var a NodeToRemove
-			//var b LBReply
-
-			//a.Node = serverList
-
-			//Call delete on itself
-			//conn.Call("NodeService.RemoveNode", a, &b)
-			//serverList = nil
 		}
+		nodeConditional.L.Unlock()
 	}
 }
 
@@ -271,15 +321,29 @@ func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
 }
 
-func contactLBToAnnounceSelf(i int) {
+func contactLBsToAnnounceSelf() {
+	var i = 0
 
+	for (i<3){
+		if(LBServers[i].Status == "online"  &&  i != lbDesignation){
+			conn, _ := rpc.Dial("tcp", LBServers[i].Address)
+			var rpcUpdateMessage LBMessage
+			var lbReply LBDataReply
+
+			rpcUpdateMessage.Message = "NIL"
+			rpcUpdateMessage.OnlineNumber = lbDesignation
+
+			conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
+		}
+		i++
+	}
 }
+
 
 func getInfoFromFirstLB() {
 	var i = 0
-	for i < 3 {
-		if LBServers[i].Status == "online" && i != lbDesignation {
-			println("Online: I", i)
+	for (i < 3) {
+		if (LBServers[i].Status == "online"  &&  i != lbDesignation){
 			break
 		}
 		i++
@@ -289,7 +353,7 @@ func getInfoFromFirstLB() {
 		println("I am the only one online")
 		return
 	}
-
+	println("DIAL!!")
 	conn, err := rpc.Dial("tcp", LBServers[i].Address)
 	if err != nil {
 		println("Error: ", err.Error())
@@ -298,11 +362,16 @@ func getInfoFromFirstLB() {
 	var rpcUpdateMessage LBMessage
 	var lbReply LBDataReply
 
-	conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
-
-	if lbReply.clients != nil {
-		println(lbReply.clients.username)
+	rpcUpdateMessage.Message = "M"
+	println("CALL!!")
+	callError := conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
+	if (callError != nil){
+		println("Error 2: ", callError.Error())
 	}
+
+	println("RETURN CALL!!")
+	clientList = lbReply.Clients
+	serverList = lbReply.Nodes
 
 	return
 }
@@ -318,11 +387,10 @@ func initializeLB() {
 			lbDesignation = i
 			//println("Error: ", err.Error())
 			println("I am number: ", lbDesignation)
-		} else if err == nil {
+		} else if ((err == nil)){
+
 			println("LoadBalancer ", i, " is online")
 			addLBToActiveList(i)
-			contactLBToAnnounceSelf(i)
-
 		}
 
 		i++
@@ -335,12 +403,8 @@ func initializeLB() {
 		os.Exit(2)
 	}
 
-	//if so, increment and retry
-
-	//if at 2 and already used, os.exit
-
-	//get information from other load balancers (client list and node list)
 	getInfoFromFirstLB()
+	contactLBsToAnnounceSelf()
 
 	return
 }
@@ -352,7 +416,7 @@ func addClientToList(username string, password string) {
 	if clientList == nil {
 		clientList = newClient
 	} else {
-		newClient.nextClient = clientList
+		newClient.NextClient = clientList
 		clientList = newClient
 	}
 
@@ -400,15 +464,15 @@ func authenticationFailure(username string, password string) bool {
 
 	//check to see if username exists
 	for next != nil {
-		if (*next).username == username {
-			if (*next).password == password {
+		if (*next).Username == username {
+			if (*next).Password == password {
 				//username match and password match
 				return false
 			}
 			//username exists but password doesn't match
 			return true
 		}
-		next = (*next).nextClient
+		next = (*next).NextClient
 	}
 
 	//if username doesnt exist, add to list
@@ -417,7 +481,7 @@ func authenticationFailure(username string, password string) bool {
 	return false
 }
 
-func addNode(udp string, clientRPC string, serverRPC string) {
+func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
 
 	//TODO: need restart implementation
 
@@ -438,8 +502,39 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 
 	//alert all nodes to the new node
 	allertAllNodes(newNode)
+	//alert other online load balancers
+	if(broadcast){
+		alertAllLoabBalancers(newNode)
+	}
 
 	return
+}
+
+func alertAllLoabBalancers(newNode *ServerItem) {
+	var nodeSetupMessage NewNodeSetup
+	nodeSetupMessage.RPC_CLIENT_IPPORT = newNode.RPC_CLIENT_IPPORT
+	nodeSetupMessage.RPC_SERVER_IPPORT = newNode.RPC_SERVER_IPPORT
+	nodeSetupMessage.UDP_IPPORT = newNode.UDP_IPPORT
+
+	var replyFromNode NodeListReply
+	println("ALERTING")
+	//iterate through all loadbalancers and alert them to the new node
+	var i = 0
+	for (i < 3){
+		if (LBServers[i].Status == "online" && i != lbDesignation){
+			conn, err := rpc.Dial("tcp", LBServers[i].Address)
+			if (err == nil) {
+				conn.Call("LBService.NewNode", nodeSetupMessage, &replyFromNode)
+			} else {
+				LBServers[i].Status = "offline"
+			}
+		}
+		i++
+	}
+	println("ALERTED SUCCESS")
+
+	return
+
 }
 
 func allertAllNodes(newNode *ServerItem) {
@@ -483,26 +578,48 @@ func isNewNode(ident string) bool {
 	return true
 }
 
-/*
+/**************************************************
 	RPC METHODS FOR LOAD BALANCERS
-*/
-
-func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
-	clientConditional.L.Lock()
+*****************************************************/
+func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
+	println("About to add new node")
 	nodeConditional.L.Lock()
-
-	reply.clients = clientList
-	reply.nodes = serverList
+	println("locking")
+	if isNewNode(message.UDP_IPPORT) {
+		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT, false)
+	}
 
 	nodeConditional.L.Unlock()
-	clientConditional.L.Unlock()
+	nodeConditional.Signal()
 
 	return nil
 }
 
-/*
+func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
+
+	if (message.Message != "NIL"){
+		clientConditional.L.Lock()
+		nodeConditional.L.Lock()
+
+		LBServers[message.OnlineNumber].Status = "online"
+
+		reply.Clients = clientList
+		reply.Nodes = serverList
+
+
+		nodeConditional.L.Unlock()
+		clientConditional.L.Unlock()
+	} else {
+		println("New LB is online: ", message.OnlineNumber)
+		LBServers[message.OnlineNumber].Status = "online"
+	}
+
+	return nil
+}
+
+/*************************************
 	RPC METHODS FOR NODES
-*/
+***************************************/
 
 //Function a node will call when it comes online
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
@@ -512,7 +629,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	println("A new node is trying to connect", message.UDP_IPPORT)
 	if isNewNode(message.UDP_IPPORT) {
-		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT)
+		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT, true)
 	}
 
 	newNode := NewNodeSetup{
@@ -530,9 +647,9 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 	return nil
 }
 
-/*
+/*****************************************
 	RPC METHODS FOR CLIENTS
-*/
+******************************************/
 
 //Function for receiving a message from a client
 func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
@@ -581,9 +698,9 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	return nil
 }
 
-/*
+/*******************************************
 	CHECK for ERRORS
-*/
+**********************************************/
 func checkError(err error) {
 	if err != nil {
 		log.Fatal(os.Stderr, "Error ", err.Error())
@@ -616,8 +733,8 @@ func printOutAllClients() {
 	println("List of Clients")
 	println("---------------")
 	for toPrint != nil {
-		fmt.Print((*toPrint).username)
-		toPrint = (*toPrint).nextClient
+		fmt.Print((*toPrint).Username)
+		toPrint = (*toPrint).NextClient
 	}
 
 	return

@@ -382,7 +382,7 @@ func getMessage() string {
 	consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		//fmt.Print(editText(consoleUsername, 44, 1), ":")
+		fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -418,8 +418,8 @@ func filterAndSendMessage(msg []string) {
 	if len(msg) == 1 {
 		sendMsg.Message = command
 		sendMsg.UserName = username
-		// consoleUsername := strings.Split(username, "\n")[0]
-		// messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
+		//consoleUsername := strings.Split(username, "\n")[0]
+		//messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
 		// do something with reply
@@ -450,7 +450,6 @@ func filterAndSendMessage(msg []string) {
 	}
 }
 
-// err := chatServer.Call("MessageService.SendPublicFile", sendMsg, &reply)
 // method to send public file
 func sendPublicFile(filepath string) {
 	var reply ServerReply
