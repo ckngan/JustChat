@@ -256,6 +256,10 @@ func startupChatConnection() {
 
 		if err == nil {
 			Logger.LogLocalEvent("connected to a loadBalancer")
+			// Welcome
+			fmt.Println()
+			fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+			fmt.Println()
 			// initializing rpc load balancer
 			loadBalancer = conn
 			joinLoadBalancerServer()
@@ -265,10 +269,6 @@ func startupChatConnection() {
 	if i == 3 {
 		os.Exit(-1)
 	}
-	// Welcome
-	fmt.Println()
-	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
-	fmt.Println()
 	return
 }
 
@@ -427,6 +427,12 @@ func filterAndSendMessage(msg []string) {
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
 
+	} else if len(msg) == 2 {
+		command = strings.TrimSpace(msg[1])
+		if command == "commands" {
+			messageCommands()
+			return
+		}
 	} else if len(msg) == 3 {
 
 		command = strings.TrimSpace(msg[1])
