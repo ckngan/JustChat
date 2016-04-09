@@ -298,13 +298,14 @@ func heartbeetCheck() {
 
 			for i != nil {
 
-				_, err := rpc.Dial("tcp", i.RPC_SERVER_IPPORT)
+				cc, err := rpc.Dial("tcp", i.RPC_SERVER_IPPORT)
 				if err != nil {
 					//assume node is dead
 					println("He's Dead Jim!")
 					deleteNodeFromList(i.UDP_IPPORT)
 				} else {
 					//Server Connected
+					cc.Close()
 				}
 
 				i = (*i).NextServer
