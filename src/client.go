@@ -124,6 +124,9 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 	reply.Message = ""
 	Logger.LogLocalEvent("rpc chat server updated")
 
+
+
+	fmt.Print("Call from LB\n")
 	// make the rpc call to the server as it's updated
 	attempts := 0
 	for {
@@ -133,6 +136,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 		}
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
+			fmt.Print(NewRpcChatServer)
 			fmt.Print(editText("Error connecting to JustChat\n", 31, 1))
 			attempts++
 		} else {
@@ -256,15 +260,17 @@ func startupChatConnection() {
 	// Connecting to a LoadBalancer
 	for i := 0; i < len(loadBalancers); i++ {
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
-
 		if err == nil {
 			Logger.LogLocalEvent("connected to a loadBalancer")
 			// initializing rpc load balancer
 			loadBalancer = conn
 			joinLoadBalancerServer()
-			break
+			return
 		}
 	}
+
+	fmt.Println("No Load Balancers")
+	os.Exit(2)
 	return
 }
 
