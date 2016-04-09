@@ -151,7 +151,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
-	messageOwner := strings.Split(editText(args.UserName, 45, 1), "\n")[0]
+	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
 	messageBody := strings.Split(editText(args.Message, 33, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
@@ -267,15 +267,18 @@ func startupChatConnection() {
 	fmt.Println()
 	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
 	fmt.Println()
-	// eventually will be used in some loop
-	n := 0
-	// Connecting to a LoadBalancer
-	conn, err := rpc.Dial("tcp", loadBalancers[n])
-	checkError(err)
-	Logger.LogLocalEvent("connected to a loadBalancer")
 
-	// initializing rpc load balancer
-	loadBalancer = conn
+	// Connecting to a LoadBalancer
+	for i := 0; i < len(loadBalancers); i++ {
+		conn, err := rpc.Dial("tcp", loadBalancers[i])
+
+		if err == nil {
+			Logger.LogLocalEvent("connected to a loadBalancer")
+			// initializing rpc load balancer
+			loadBalancer = conn
+			break
+		}
+	}
 
 	var reply ServerReply
 	var message NewClientSetup
