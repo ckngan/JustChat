@@ -119,7 +119,7 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
-var thisClock int // number of messages received from own clients
+var thisClock uint64 // number of messages received from own clients
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
 var numMsgsRcvd int // # of messages this node has received
 
@@ -143,13 +143,14 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 		Clock:     args.Clock}
 
 	numMsgsRcvd++
-	// toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
+	fmt.Println("new msg from other server: Clock=%d, Msgs Rcvd=%d", thisClock, numMsgsRcvd)
+	//toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
 	clientListMutex.Lock()
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
 	clientListMutex.Unlock()
 
-	// checkBufFull()
+	checkBufFull()
 
 	reply.Message = "success"
 	return nil
@@ -261,6 +262,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	thisClock++
 	numMsgsRcvd++
+	fmt.Println("new client msg: Clock=%d, Msgs Rcvd=%d", thisClock, numMsgsRcvd)
 
 	serverListMutex.Lock()
 	go sendPublicMsgServers(message)
@@ -269,7 +271,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 	go sendPublicMsgClients(message)
 	clientListMutex.Unlock()
 
-	// checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
+	checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
 
 	//TODO:send to k other servers to STORE
 	reply.Message = "success"
@@ -363,6 +365,7 @@ func main() {
 
 	// setup for chat history
 	//toHistoryBuf[0] = ClockedClientMsg{ClientMsg: ClientMessage{UserName: "bob", Message: "zzz"}, ServerId: "thisServer", Clock: 5}
+	toHistoryBuf = make([]ClockedClientMsg, 50)
 	thisClock = 0
 	numMsgsRcvd = 0
 
@@ -446,11 +449,10 @@ func checkError(err error) {
 	}
 }
 
-//
-//This method will remove a node from the list of server nodes with the specified
-//UDP_IPPORT
-//
-//*****Make sure you lock access to the serverList before callng this method*******
+/*
+ This method will remove a node from the list of server nodes with the specified UDP_IPPORT
+ *****Make sure you lock access to the serverList before callng this method*******
+*/
 func deleteNodeFromList(udpAddr string) {
 	//As every node is unique in its UDP address we can assume deletion after we find that address
 	//and return right away
@@ -703,6 +705,7 @@ func joinStorageServers() {
 
 	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
 	checkError(err)
+	println("call okay")
 
 	list := reply.ListOfNodes
 
@@ -865,7 +868,7 @@ func sendPublicMsgServers(message ClientMessage) {
 		ServerId:  RECEIVE_PING_ADDR,
 		Clock:     thisClock}
 
-	// toHistoryBuf[numMsgsRcvd-1] = clockedMsg
+	//toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
 	for next != nil {
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
@@ -1063,7 +1066,6 @@ func getAddr(uname string) string {
 	return reply.Message
 }
 
-/*
 func checkBufFull() {
 	if numMsgsRcvd == 50 {
 		// TODO sort & write to file
@@ -1075,4 +1077,3 @@ func checkBufFull() {
 		toHistoryBuf = nil
 	}
 }
-*/
