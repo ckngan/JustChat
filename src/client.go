@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -125,9 +126,6 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 	reply.Message = ""
 	Logger.LogLocalEvent("rpc chat server updated")
 
-
-
-	fmt.Print("Call from LB\n")
 	// make the rpc call to the server as it's updated
 	attempts := 0
 	for {
@@ -150,9 +148,10 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
+	re := regexp.MustCompile(`\r?\n`)
 	messageOwner := editText(args.UserName, 33, 1)
-	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
-	output := messageOwner + "--->" + messageBody
+	messageBody := editText(args.Message, 32, 1)
+	output := re.ReplaceAllString(messageOwner+": "+messageBody, "")
 	messageChannel <- output
 	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
