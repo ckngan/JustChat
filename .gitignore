@@ -3,5 +3,7 @@
 /pkg/
 /bin/
 /src/sys-Log.txt
-sys-Log.txt
+_sys-Log.txt
 /sys-Log.txt
+../Files/
+_Files

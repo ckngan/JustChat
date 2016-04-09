@@ -9,6 +9,7 @@ import (
 	"os"
 	//"strconv"
 	"sync"
+	"time"
 
 	"github.com/arcaneiceman/GoVector/govec"
 )
@@ -41,6 +42,12 @@ type ServerItem struct {
 type LoadBalancer struct {
 	Address string
 	Status string
+}
+
+type HeartBeatItem struct {
+	Node *ServerItem
+	NumMissed int
+	Next *HeartBeatItem
 }
 
 /* ---------------MESSAGE TYPES-------------*/
@@ -104,9 +111,10 @@ var lbDesignation int
 //List of All LoadBalance Servers
 var LBServers []LoadBalancer
 
-//List of clients
+//Lists
 var clientList *ClientItem
 var serverList *ServerItem
+var heartsToCheck *HeartBeatItem
 
 //List of locks
 var serverListMutex sync.Mutex
@@ -167,6 +175,10 @@ func main() {
 	//Startup Method to get client list and server list from existing load balancers
 	initializeLB()
 
+
+	//Run heartbeet check to see if nodes are still running
+	go heartbeetCheck()
+
 	//setup to accept rpcCalls on the first availible port
 	clientService := new(MessageService)
 	rpc.Register(clientService)
@@ -225,6 +237,36 @@ func main() {
 /*
 	LOCAL HELPER FUNCTIONS
 */
+type NodeToRemove struct {
+	Node *ServerItem
+}
+type LBReply struct {
+	Message string
+}
+func heartbeetCheck(){
+	for {
+		time.Sleep(2 * time.Second)
+		if(serverList == nil){
+			println("No Servers")
+		} else {
+			time.Sleep(20 * time.Second)
+			_, err := rpc.Dial("tcp", serverList.RPC_SERVER_IPPORT)
+			if (err != nil){
+				println("Error: ", err.Error())
+			} else {
+				println("Connected to Node")
+			}
+			//var a NodeToRemove
+			//var b LBReply
+
+			//a.Node = serverList
+
+			//Call delete on itself
+			//conn.Call("NodeService.RemoveNode", a, &b)
+			//serverList = nil
+		}
+	}
+}
 
 func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
@@ -401,8 +443,38 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 		serverList = newNode
 	}
 
+	//alert all nodes to the new node
+	allertAllNodes(newNode)
 
 	return
+}
+
+func allertAllNodes(newNode *ServerItem) {
+	//dial all active nodes and alert them of the new node in the system
+	next := serverList
+	for (next != nil){
+		conn, err := rpc.Dial("tcp", next.RPC_SERVER_IPPORT)
+		if err != nil {
+			println("Error dialing node w/UDP info of: ", next.UDP_IPPORT)
+			return
+		}
+
+		var nodeSetupMessage NewNodeSetup
+		nodeSetupMessage.RPC_CLIENT_IPPORT = newNode.RPC_CLIENT_IPPORT
+		nodeSetupMessage.RPC_SERVER_IPPORT = newNode.RPC_SERVER_IPPORT
+		nodeSetupMessage.UDP_IPPORT = newNode.UDP_IPPORT
+
+		var replyFromNode ServerReply
+
+		callErr := conn.Call("NodeService.NewStorageNode", nodeSetupMessage, &replyFromNode)
+		if callErr != nil {
+			println("Error with method call 'NodeService.NewStorageNode' of: ", next.UDP_IPPORT)
+			return
+		}
+
+		next = (*next).NextServer
+
+	}
 }
 
 func isNewNode(ident string) bool {
@@ -464,6 +536,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
+
 	return nil
 }
 

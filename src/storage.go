@@ -71,6 +71,7 @@ type FileData struct {
 	Data     []byte
 }
 
+
 //Client object
 type ClientItem struct {
 	Username   string
@@ -120,17 +121,30 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ServerRepl
 	return nil
 }
 
-func (nodeSvc *NodeService) SendPublicFile(args *ClientMessage, reply *ServerReply) error {
-	println("We received a new message")
-	println("username: " + args.UserName + " Message: " + args.Message)
-	//find file by name and user upload? and send it
-
+func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
+	println("We received a new File")
+	println("username: " + args.UserName + " FileName: " + args.FileName)
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	clientListMutex.Lock()
+	sendPublicFileClients(file)
+	clientListMutex.Unlock()
 	reply.Message = "success"
 	return nil
 }
 
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("YOU'VE BEEN CHOSEN TO STORE A FILE :D")
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	storeFile(file)
+
 	reply.Message = "success"
 	return nil
 }
@@ -150,11 +164,14 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 //***********************CLIENT RPC METHODS **********************************************//
 //method for joining the storage node
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
+
 	println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
-	println("Size of client list: ", sizeOfClientList())
-	addClient(message.UserName, message.RPC_IPPORT)
-	println("New Size of client list: ", sizeOfClientList())
+	println("Size of client list: ",sizeOfClientList())
+	addClient(message.UserName,message.RPC_IPPORT)
+	println("New Size of client list: ",sizeOfClientList())
 	println("NewUser is: ", clientList.Username)
+	//TODO: STORE USER DATA
+
 	reply.Message = "success"
 	return nil
 }
@@ -174,6 +191,8 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 	clientListMutex.Lock()
 	sendPublicMsgClients(message)
 	clientListMutex.Unlock()
+
+	//TODO:send to k other servers to STORE
 	reply.Message = "success"
 	return nil
 }
@@ -182,6 +201,30 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new file")
 	println("username: " + args.UserName + "filename:" + args.FileName)
+
+	file := FileData{
+		UserName : args.UserName,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	storeFile(file)
+
+	serverListMutex.Lock()
+	sendPublicFileServers(file)
+	serverListMutex.Unlock()
+	clientListMutex.Lock()
+	sendPublicFileClients(file)
+	clientListMutex.Unlock()
+	/*
+	//store in k-1 other servers and keep track
+	storeFile := StoreFileData{
+		UserName : args.UserName,
+		UDP_IPPORT: RECEIVE_PING_ADDR,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	kStores(storeFile)
+*/
 	reply.Message = "success"
 	return nil
 }
@@ -192,6 +235,25 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply) e
 	println("username requested: " + args.UserName + "filename:" + args.FileName)
 	//find requested user's IP and send it back
 	reply.Message = "success"
+	return nil
+}
+
+//***********************Load Balancer RPC METHODS **********************************************//
+//method for deleting a dead storage node
+type NodeToRemove struct {
+	Node *ServerItem
+}
+type LBReply struct {
+	Message string
+}
+type BackService int
+func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
+	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
+	serverListMutex.Lock()
+	println("\n\nCall to delete")
+	deleteNodeFromList(nodeToRemove.Node.UDP_IPPORT)
+	println("Should be deleted")
+	serverListMutex.Unlock()
 	return nil
 }
 
@@ -321,6 +383,46 @@ func checkError(err error) {
 		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
+}
+
+//
+//This method will remove a node from the list of server nodes with the specified
+//UDP_IPPORT
+//
+//*****Make sure you lock access to the serverList before callng this method*******
+func deleteNodeFromList(udpAddr string) {
+	//As every node is unique in its UDP address we can assume deletion after we find that address
+	//and return right away
+
+	//initialize variable
+	i := serverList
+
+	//if there are no servers, return
+	//Shouldn't happen, but just in case
+	if(i==nil){
+		return
+	}
+	//if i is the one we want to delete, remove it and return
+	if(i.UDP_IPPORT == udpAddr){
+		serverList = (*i).NextServer
+		return
+	}
+
+	//if i is not the one we want, search until it is found
+	j := (*i).NextServer
+
+	for(j != nil) {
+		//if found, delete
+		if(j.UDP_IPPORT == udpAddr){
+			(*i).NextServer = (*j).NextServer
+			return
+		}
+
+		i = (*i).NextServer
+		j = (*i).NextServer
+	}
+
+	return
 }
 
 /*
@@ -550,8 +652,17 @@ func joinStorageServers() {
 
 	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
 	checkError(err)
-	list := reply.ListOfNodes
-	fmt.Println("Nodes So Far: ", list.UDP_IPPORT)
+
+	list:=reply.ListOfNodes
+
+	i := list
+	println("\nNodes So Far")
+	for (i != nil){
+		println("Node w\\UDP: ", i.UDP_IPPORT)
+		i = (*i).NextServer
+	}
+	println("")
+
 	serverListMutex.Lock()
 	serverList = list
 	serverListMutex.Unlock()
@@ -732,3 +843,85 @@ func sendPublicMsgClients(message ClientMessage) {
 		next = (*next).NextClient
 	}
 }
+
+
+func storeFile(file FileData){
+
+ path := "../Files/"+file.UserName+"/"
+ err := os.MkdirAll(path, 0777)
+    checkError(err)
+ println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
+ f, er := os.Create(path+file.FileName)
+    checkError(er)
+ n, error := f.Write(file.Data)
+ 	checkError(error)
+println("bytes written to file: ", n)
+f.Close()
+}
+
+func sendPublicFileServers(file FileData){
+	next := serverList
+
+	for next != nil {
+		if((*next).UDP_IPPORT != RECEIVE_PING_ADDR){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextServer
+	}
+}
+
+func sendPublicFileClients(file FileData){
+	next := clientList
+
+	for next != nil {
+		if((*next).Username != file.UserName){
+			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Clients: Client ",(*next).Username," isn't accepting tcp conns so skip it... ")
+				//it's dead but the ping will eventually take care of it
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+        }
+		next = (*next).NextClient
+	}
+}
+
+func kStores(file StoreFileData){
+
+	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("lOAD BALANCER isn't accepting tcp conns..... ")
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.StoreKFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+
+}
+
