@@ -459,13 +459,10 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	println("about to lock NodeCond")
 	nodeConditional.L.Lock()
 
 	for serverList == nil {
-		println("Waiting")
 		nodeConditional.Wait()
-		println("Signaled")
 	}
 
 	next = serverList

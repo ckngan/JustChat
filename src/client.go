@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-
+	"sync"
 	"github.com/arcaneiceman/GoVector/govec"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -95,6 +95,10 @@ var loadBalancer *rpc.Client
 // GoVector log
 var Logger *govec.GoLog
 
+//locks
+var msgMutex sync.Mutex
+var msgConditional *sync.Cond
+
 //========================== Client RPC Service ======================== //
 //RPC Value for receiving messages
 type ClientMessageService int
@@ -150,6 +154,7 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Clie
 	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
+	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
 
 	reply.Message = ""
@@ -163,6 +168,7 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 	messageBody := editText(args.Message, 33, 1)
 	output := privateFlag + messageOwner + ": " + messageBody
 	messageChannel <- output
+	msgConditional.Signal()
 	Logger.LogLocalEvent("client received private message")
 
 	reply.Message = ""
@@ -182,6 +188,9 @@ func main() {
 	loadBalancer2 := os.Args[2]
 	loadBalancer3 := os.Args[3]
 	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
+
+	msgMutex = sync.Mutex{}
+	msgConditional = sync.NewCond(&msgMutex)
 
 	// allocate messageChannel for global access
 	messageChannel = make(chan string, bufferMax)
@@ -528,6 +537,7 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 		fmt.Println()
 		output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
 		messageChannel <- output
+		msgConditional.Signal()
 		return "Received"
 	} else {
 		return "Decline"
@@ -537,18 +547,21 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 // Method to print messages to console in order of receipt
 func flushToConsole() {
 	// signal that flushing to console is done
-	c := make(chan int)
+	//c := make(chan int)
 	go func() {
 		for {
+			msgConditional.L.Lock()
 			select {
 			case message := <-messageChannel:
 				fmt.Println(message)
 			default:
-				c <- 1
+				msgConditional.Wait()
+			//	c <- 1
 			}
+			msgConditional.L.Unlock()
 		}
 	}()
-	<-c
+	//<-c
 	return
 }
 
