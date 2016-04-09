@@ -71,22 +71,19 @@ type FileData struct {
 	Data     []byte
 }
 
-
-type FileInfo struct{
+type FileInfo struct {
 	UserName string
 	FileName string
 }
 
 // FileInfoData to build file structure in rpc call
 type StoreFileData struct {
-	UserName string
+	UserName   string
 	UDP_IPPORT string
-	FileName string
-	FileSize int64
-	Data     []byte
+	FileName   string
+	FileSize   int64
+	Data       []byte
 }
-
-
 
 //Client object
 type ClientItem struct {
@@ -141,10 +138,10 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 	println("We received a new File")
 	println("username: " + args.UserName + " FileName: " + args.FileName)
 	file := FileData{
-		UserName : args.UserName,
-		FileName : args.FileName,
-		FileSize : args.FileSize,
-		Data     : args.Data}
+		UserName: args.UserName,
+		FileName: args.FileName,
+		FileSize: args.FileSize,
+		Data:     args.Data}
 	clientListMutex.Lock()
 	sendPublicFileClients(file)
 	clientListMutex.Unlock()
@@ -155,47 +152,45 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("YOU'VE BEEN CHOSEN TO STORE A FILE :D")
 	file := FileData{
-		UserName : args.UserName,
-		FileName : args.FileName,
-		FileSize : args.FileSize,
-		Data     : args.Data}
+		UserName: args.UserName,
+		FileName: args.FileName,
+		FileSize: args.FileSize,
+		Data:     args.Data}
 	storeFile(file)
 
 	reply.Message = "success"
 	return nil
 }
 
-
 func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 	println("gimme shit")
- 	path:="../Files/"+args.UserName+"/"+args.FileName
+	path := "../Files/" + args.UserName + "/" + args.FileName
 
 	fi, err := os.Stat(path)
 
 	if os.IsNotExist(err) {
-		println("File "+path+" Doesn't Exist")
+		println("File " + path + " Doesn't Exist")
 		reply = nil
 
-	}else{
+	} else {
 
-	// re-open file
-	var file, errr = os.OpenFile(path, os.O_RDWR, 0644)
-	checkError(errr)
-	defer file.Close()
+		// re-open file
+		var file, errr = os.OpenFile(path, os.O_RDWR, 0644)
+		checkError(errr)
+		defer file.Close()
 
+		Data := make([]byte, fi.Size())
 
-		Data := make([]byte,fi.Size())
+		_, _ = file.Read(Data)
 
-	_, _ = file.Read(Data)
-
-	checkError(err)
+		checkError(err)
 
 		reply.UserName = args.UserName
 		reply.FileName = args.FileName
 		reply.FileSize = fi.Size()
-		reply.Data 	 = Data
+		reply.Data = Data
 
-}
+	}
 
 	return nil
 }
@@ -203,21 +198,20 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
 	println("delete that shit i told you to store")
 
-	path:="../Files/"+args.UserName+"/"+args.FileName
+	path := "../Files/" + args.UserName + "/" + args.FileName
 
 	// detect if file exists
 	_, err := os.Stat(path)
 
 	// create file if not exists
 	if os.IsNotExist(err) {
-		println("File "+path+" Doesn't Exist")
-		reply.Message = "File "+path+" Doesn't Exist"
-	}else{
-	err = os.Remove(path)
-	checkError(err)
-	reply.Message = "success"
+		println("File " + path + " Doesn't Exist")
+		reply.Message = "File " + path + " Doesn't Exist"
+	} else {
+		err = os.Remove(path)
+		checkError(err)
+		reply.Message = "success"
 	}
-
 
 	return nil
 }
@@ -227,9 +221,9 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
 
 	println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
-	println("Size of client list: ",sizeOfClientList())
-	addClient(message.UserName,message.RPC_IPPORT)
-	println("New Size of client list: ",sizeOfClientList())
+	println("Size of client list: ", sizeOfClientList())
+	addClient(message.UserName, message.RPC_IPPORT)
+	println("New Size of client list: ", sizeOfClientList())
 	println("NewUser is: ", clientList.Username)
 	//TODO: STORE USER DATA
 
@@ -264,10 +258,10 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	println("username: " + args.UserName + "filename:" + args.FileName)
 
 	file := FileData{
-		UserName : args.UserName,
-		FileName : args.FileName,
-		FileSize : args.FileSize,
-		Data     : args.Data}
+		UserName: args.UserName,
+		FileName: args.FileName,
+		FileSize: args.FileSize,
+		Data:     args.Data}
 	storeFile(file)
 
 	serverListMutex.Lock()
@@ -277,15 +271,15 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	sendPublicFileClients(file)
 	clientListMutex.Unlock()
 	/*
-	//store in k-1 other servers and keep track
-	storeFile := StoreFileData{
-		UserName : args.UserName,
-		UDP_IPPORT: RECEIVE_PING_ADDR,
-		FileName : args.FileName,
-		FileSize : args.FileSize,
-		Data     : args.Data}
-	kStores(storeFile)
-*/
+		//store in k-1 other servers and keep track
+		storeFile := StoreFileData{
+			UserName : args.UserName,
+			UDP_IPPORT: RECEIVE_PING_ADDR,
+			FileName : args.FileName,
+			FileSize : args.FileSize,
+			Data     : args.Data}
+		kStores(storeFile)
+	*/
 	reply.Message = "success"
 	return nil
 }
@@ -308,6 +302,7 @@ type LBReply struct {
 	Message string
 }
 type BackService int
+
 func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
 	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
 	serverListMutex.Lock()
@@ -429,11 +424,11 @@ func deleteNodeFromList(udpAddr string) {
 
 	//if there are no servers, return
 	//Shouldn't happen, but just in case
-	if(i==nil){
+	if i == nil {
 		return
 	}
 	//if i is the one we want to delete, remove it and return
-	if(i.UDP_IPPORT == udpAddr){
+	if i.UDP_IPPORT == udpAddr {
 		serverList = (*i).NextServer
 		return
 	}
@@ -441,9 +436,9 @@ func deleteNodeFromList(udpAddr string) {
 	//if i is not the one we want, search until it is found
 	j := (*i).NextServer
 
-	for(j != nil) {
+	for j != nil {
 		//if found, delete
-		if(j.UDP_IPPORT == udpAddr){
+		if j.UDP_IPPORT == udpAddr {
 			(*i).NextServer = (*j).NextServer
 			return
 		}
@@ -683,11 +678,11 @@ func joinStorageServers() {
 	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
 	checkError(err)
 
-	list:=reply.ListOfNodes
+	list := reply.ListOfNodes
 
 	i := list
 	println("\nNodes So Far")
-	for (i != nil){
+	for i != nil {
 		println("Node w\\UDP: ", i.UDP_IPPORT)
 		i = (*i).NextServer
 	}
@@ -853,7 +848,70 @@ func sendPublicMsgClients(message ClientMessage) {
 	next := clientList
 
 	for next != nil {
-		if (*next).Username != message.UserName {
+		//if (*next).Username != message.UserName {
+		systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+		//checkError(err)
+		if err != nil {
+			println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
+			//it's dead but the ping will eventually take care of it
+		} else {
+			var reply ServerReply
+			// client api uses ClientMessageService
+			err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+			checkError(err)
+			if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+			}
+			systemService.Close()
+		}
+		//}
+		next = (*next).NextClient
+	}
+}
+
+func storeFile(file FileData) {
+
+	path := "../Files/" + file.UserName + "/"
+	err := os.MkdirAll(path, 0777)
+	checkError(err)
+	println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
+	f, er := os.Create(path + file.FileName)
+	checkError(er)
+	n, error := f.Write(file.Data)
+	checkError(error)
+	println("bytes written to file: ", n)
+	f.Close()
+}
+
+func sendPublicFileServers(file FileData) {
+	next := serverList
+
+	for next != nil {
+		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+			} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+					fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+			}
+		}
+		next = (*next).NextServer
+	}
+}
+
+func sendPublicFileClients(file FileData) {
+	next := clientList
+
+	for next != nil {
+		if (*next).Username != file.UserName {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 			//checkError(err)
 			if err != nil {
@@ -861,8 +919,7 @@ func sendPublicMsgClients(message ClientMessage) {
 				//it's dead but the ping will eventually take care of it
 			} else {
 				var reply ServerReply
-				// client api uses ClientMessageService
-				err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
 				checkError(err)
 				if err == nil {
 					fmt.Println("we received a reply from the server: ", reply.Message)
@@ -874,84 +931,20 @@ func sendPublicMsgClients(message ClientMessage) {
 	}
 }
 
-
-func storeFile(file FileData){
-
- path := "../Files/"+file.UserName+"/"
- err := os.MkdirAll(path, 0777)
-    checkError(err)
- println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
- f, er := os.Create(path+file.FileName)
-    checkError(er)
- n, error := f.Write(file.Data)
- 	checkError(error)
-println("bytes written to file: ", n)
-f.Close()
-}
-
-func sendPublicFileServers(file FileData){
-	next := serverList
-
-	for next != nil {
-		if((*next).UDP_IPPORT != RECEIVE_PING_ADDR){
-			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Servers: Server ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
-				//it's dead but the ping will eventually take care of it
-        	} else {
-				var reply ServerReply
-				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
-				checkError(err)
-				if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
-				}
-				systemService.Close()
-        	}
-        }
-		next = (*next).NextServer
-	}
-}
-
-func sendPublicFileClients(file FileData){
-	next := clientList
-
-	for next != nil {
-		if((*next).Username != file.UserName){
-			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Clients: Client ",(*next).Username," isn't accepting tcp conns so skip it... ")
-				//it's dead but the ping will eventually take care of it
-        	} else {
-				var reply ServerReply
-				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
-				checkError(err)
-				if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
-				}
-				systemService.Close()
-        	}
-        }
-		next = (*next).NextClient
-	}
-}
-
-func kStores(file StoreFileData){
+func kStores(file StoreFileData) {
 
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("lOAD BALANCER isn't accepting tcp conns..... ")
-        	} else {
-				var reply ServerReply
-				err = systemService.Call("NodeService.StoreKFile", file, &reply)
-				checkError(err)
-				if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
-				}
-				systemService.Close()
-        	}
+	//checkError(err)
+	if err != nil {
+		println("lOAD BALANCER isn't accepting tcp conns..... ")
+	} else {
+		var reply ServerReply
+		err = systemService.Call("NodeService.StoreKFile", file, &reply)
+		checkError(err)
+		if err == nil {
+			fmt.Println("we received a reply from the server: ", reply.Message)
+		}
+		systemService.Close()
+	}
 
 }
-
