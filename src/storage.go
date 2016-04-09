@@ -56,6 +56,13 @@ type ClientMessage struct {
 	Message  string
 }
 
+// Clock stamped client message for ordered chat history
+type ClockedClientMsg struct {
+	ClientMsg ClientMessage
+	ServerId string
+	Clock uint64
+}
+
 type ClientRequest struct {
 	UserName          string // client making the request for the username
 	RequestedUsername string // return the rpc address of this client
@@ -71,7 +78,6 @@ type FileData struct {
 	Data     []byte
 }
 
-
 type FileInfo struct{
 	UserName string
 	FileName string
@@ -85,8 +91,6 @@ type StoreFileData struct {
 	FileSize int64
 	Data     []byte
 }
-
-
 
 //Client object
 type ClientItem struct {
@@ -111,6 +115,9 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
+var thisClock uint64 // number of messages received from own clients
+var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
+
 
 //****************************BACK-END RPC METHODS***********************************//
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
@@ -123,14 +130,20 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 	return nil
 }
 
-func (nodeSvc *NodeService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
+func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
 	println("We received a new message")
-	println("username: " + args.UserName + " Message: " + args.Message)
-	message := ClientMessage{
-		UserName: args.UserName,
-		Message:  args.Message}
+	println("username: " + args.ClientMessage.UserName + " Message: " + args.ClientMessage.Message + " Server: " + args.ServerId + " Clock #" + args.Clock)
+	
+	inClockedMsg := ClockedClientMsg{
+		ClientMessage: args.ClientMessage,
+		ServerId: args.ServerId,
+		Clock: args.Clock
+	}
+	
+	// TODO add to buffer
+
 	clientListMutex.Lock()
-	sendPublicMsgClients(message)
+	sendPublicMsgClients(inClockedMsg.ClientMessage)
 	clientListMutex.Unlock()
 
 	reply.Message = "success"
@@ -165,7 +178,6 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 	return nil
 }
 
-
 func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 	println("gimme shit")
  	path:="../Files/"+args.UserName+"/"+args.FileName
@@ -176,7 +188,7 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 		println("File "+path+" Doesn't Exist")
 		reply = nil
 
-	}else{
+	} else {
 
 	// re-open file
 	var file, errr = os.OpenFile(path, os.O_RDWR, 0644)
@@ -194,8 +206,7 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 		reply.FileName = args.FileName
 		reply.FileSize = fi.Size()
 		reply.Data 	 = Data
-
-}
+	}
 
 	return nil
 }
@@ -217,7 +228,6 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 	checkError(err)
 	reply.Message = "success"
 	}
-
 
 	return nil
 }
@@ -244,7 +254,10 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	message := ClientMessage{
 		UserName: args.UserName,
-		Message:  args.Message}
+		Message:  args.Message
+	}
+
+	thisClock++
 
 	serverListMutex.Lock()
 	sendPublicMsgServers(message)
@@ -285,7 +298,7 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 		FileSize : args.FileSize,
 		Data     : args.Data}
 	kStores(storeFile)
-*/
+	*/
 	reply.Message = "success"
 	return nil
 }
@@ -304,10 +317,13 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply) e
 type NodeToRemove struct {
 	Node *ServerItem
 }
+
 type LBReply struct {
 	Message string
 }
+
 type BackService int
+
 func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
 	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
 	serverListMutex.Lock()
@@ -335,6 +351,9 @@ func main() {
 	serverListMutex = &sync.Mutex{}
 	clientListMutex = &sync.Mutex{}
 	clientList = nil
+
+	toHistoryBuf = make([]ClockedClientMsg, 50)
+	thisClock = 0
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
 
@@ -374,7 +393,7 @@ func main() {
 	println("we're sending pings on: ", SEND_PING_IPPORT)
 	joinStorageServers()
 
-	//this is for testing but shoulh be locked
+	//this is for testing but should be locked
 	x := sizeOfServerList()
 
 	println("WE RECEIVED A LIST OF SIZE: ", x)
@@ -458,7 +477,6 @@ func deleteNodeFromList(udpAddr string) {
 /*
 * Deletes server with IP:PORT equal to 'a' inside of list if it is found
  */
-
 func deleteServerFromList(udp string) {
 	next := serverList
 	inner := serverList
@@ -501,14 +519,12 @@ func deleteServerFromList(udp string) {
 		}
 
 		next = (*next).NextServer
-
 	}
 }
 
 /*
 * cycles through list of connected servers and pings them to make sure theyre still active
  */
-
 func initPingServers(LocalAddr *net.UDPAddr) {
 	for {
 		serverListMutex.Lock()
@@ -543,15 +559,12 @@ func initPingServers(LocalAddr *net.UDPAddr) {
 		timer1 := time.NewTimer(time.Second * 10)
 		<-timer1.C
 		println("Timer's up")
-
 	}
-
 }
 
 /*
 * Writes to the UDP connection for a given server and waits for a reply to make sure server is still active
  */
-
 func pingServer(Conn *net.UDPConn, attempt int) (dead bool) {
 
 	msg := "lbping"
@@ -582,7 +595,6 @@ func pingServer(Conn *net.UDPConn, attempt int) (dead bool) {
 * Checks to see if server is replying, if not it attempts to ping again, if tried more than 2 times, it returns true
 * to state that the server has died
  */
-
 func handlePingReply(Conn *net.UDPConn, err error, attempt int) {
 	if e := err.(net.Error); e.Timeout() {
 
@@ -635,7 +647,6 @@ func handleUDP(recmsg string, Conn *net.UDPConn, addr *net.UDPAddr) {
 /*
 * listening for RPC calls from the other servers
  */
-
 func systemListenServe(local string, c chan int) {
 	ll, ee := net.Listen("tcp", local)
 	nodePORT := ll.Addr().(*net.TCPAddr).Port
@@ -652,7 +663,6 @@ func systemListenServe(local string, c chan int) {
 /*
 * listening for RPC calls from the clients
  */
-
 func clientListenServe(local string, ch chan int) {
 	ll, ee := net.Listen("tcp", local)
 	nodePORT := ll.Addr().(*net.TCPAddr).Port
@@ -741,7 +751,6 @@ func isNewNode(ident string) bool {
 }
 
 func sizeOfServerList() (total int) {
-
 	next := serverList
 	total = 0
 	for next != nil {
@@ -787,7 +796,6 @@ func addClient(username string, rpc string) {
 }
 
 func isNewClient(ident string) bool {
-
 	next := clientList
 
 	for next != nil {
@@ -801,7 +809,6 @@ func isNewClient(ident string) bool {
 }
 
 func sizeOfClientList() (total int) {
-
 	next := clientList
 	total = 0
 	for next != nil {
@@ -828,6 +835,12 @@ func isActive(rpc string)(bool){
 func sendPublicMsgServers(message ClientMessage) {
 	next := serverList
 
+	clockedMsg := ClockedClientMsg{
+		ClientMessage: message,
+		ServerId: 	RECEIVE_PING_ADDR,
+		Clock: thisClock
+	}
+
 	for next != nil {
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
@@ -837,7 +850,7 @@ func sendPublicMsgServers(message ClientMessage) {
 				//it's dead but the ping will eventually take care of it
 			} else {
 				var reply ServerReply
-				err = systemService.Call("NodeService.SendPublicMsg", message, &reply)
+				err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
 				checkError(err)
 				if err == nil {
 					fmt.Println("we received a reply from the server: ", reply.Message)
