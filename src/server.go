@@ -601,6 +601,7 @@ func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) err
 	}
 
 	nodeConditional.L.Unlock()
+	nodeConditional.Signal()
 
 	return nil
 }

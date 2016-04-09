@@ -198,3 +198,59 @@ client 192.168.0.107:54054 {"client 192.168.0.107:54054":2}
 connected to a loadBalancer
 lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":34}
 rpc client connection started
+ 
+=== Execution #14  ===
+lb [::]:64637 {"lb [::]:64637":1}
+LB was initialized
+ 
+=== Execution #15  ===
+lb [::]:64649 {"lb [::]:64649":1}
+LB was initialized
+lb [::]:64649 {"lb [::]:64649":2}
+new storage node online
+ 
+=== Execution #16  ===
+lb [::]:64776 {"lb [::]:64776":1}
+LB was initialized
+ 
+=== Execution #17  ===
+lb [::]:64792 {"lb [::]:64792":1}
+LB was initialized
+ 
+=== Execution #18  ===
+client 192.168.0.146:64804 {"client 192.168.0.146:64804":1}
+Client was initialized
+lb [::]:64776 {"lb [::]:64776":2}
+rpc client connection started
+client 192.168.0.146:64804 {"client 192.168.0.146:64804":2}
+connected to a loadBalancer
+client 192.168.0.146:64804 {"client 192.168.0.146:64804":3}
+rpc connection started
+lb [::]:64792 {"lb [::]:64792":2}
+new storage node online
+ 
+=== Execution #19  ===
+lb [::]:64901 {"lb [::]:64901":1}
+LB was initialized
+ 
+=== Execution #20  ===
+lb [::]:64913 {"lb [::]:64913":1}
+LB was initialized
+ 
+=== Execution #21  ===
+client 192.168.0.146:64919 {"client 192.168.0.146:64919":1}
+Client was initialized
+client 192.168.0.146:64919 {"client 192.168.0.146:64919":2}
+connected to a loadBalancer
+lb [::]:64901 {"lb [::]:64901":2}
+rpc client connection started
+client 192.168.0.146:64919 {"client 192.168.0.146:64919":3}
+rpc connection started
+client 192.168.0.146:64919 {"client 192.168.0.146:64919":4}
+rpc chat server updated
+lb [::]:64901 {"lb [::]:64901":3}
+client joined chat service successful
+client 192.168.0.146:64919 {"client 192.168.0.146:64919":5}
+received message from server
+lb [::]:64913 {"lb [::]:64913":2}
+new storage node online
