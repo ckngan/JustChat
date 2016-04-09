@@ -407,6 +407,7 @@ func initializeLB() {
 func sendClientDataToAllLBs(c *ClientItem){
 	i := 0
 	for(i < 3){
+		println("I: ",i)
 		if(LBServers[i].Status == "online" && i != lbDesignation){
 			println("Sending client to: ", i)
 
@@ -428,6 +429,7 @@ func sendClientDataToAllLBs(c *ClientItem){
 
 		i++
 	}
+
 	return
 }
 
@@ -445,7 +447,6 @@ func addClientToList(username string, password string, addr string) {
 	}
 
 	printOutAllClients()
-
 	return
 }
 
@@ -454,10 +455,13 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
+	println("about to lock NodeCond")
 	nodeConditional.L.Lock()
 
 	for serverList == nil {
+		println("Waiting")
 		nodeConditional.Wait()
+		println("Signaled")
 	}
 
 	next = serverList
@@ -613,7 +617,7 @@ func isNewNode(ident string) bool {
 	RPC METHODS FOR LOAD BALANCERS
 *****************************************************/
 func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
-	println("About to add new node")
+	
 	nodeConditional.L.Lock()
 	if isNewNode(message.UDP_IPPORT) {
 		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT, false)
@@ -626,13 +630,13 @@ func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) err
 }
 
 func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) error {
-	println("New Client on other node being added to my list")
 	clientConditional.L.Lock()
 
 	addClient(message.ClientObject)
 
-	clientConditional.L.Lock()
+	clientConditional.L.Unlock()
 	clientConditional.Signal()
+
 
 	return nil
 }
@@ -744,7 +748,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		var rpcUpdateMessage ChatServer
 
 		//Dial and update the client with their server address
-
+		println("Getting server for client")
 		selectedServer, selectionError := getServerForCLient()
 		if selectionError != nil {
 			println(selectionError.Error())
