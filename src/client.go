@@ -463,8 +463,6 @@ func filterAndSendMessage(msg []string) {
 			sendPrivateFile(user, message)
 		} else if command == "message" {
 			sendPrivateMessage(user, message)
-		} else if command == "wow" {
-			fmt.Println("Hey")
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
@@ -536,7 +534,7 @@ func receiveFilePermission(filename string) bool {
 		if len(permit) > 0 {
 			if permit == "y" {
 				return true
-			} else if permit != "n" {
+			} else if permit == "n" {
 				return false
 			} else {
 				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1), " ")
@@ -552,6 +550,8 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 	// option to receive file
 	if receiveFilePermission(filename) {
 		directory := getDownloadDirectory()
+		fmt.Println(directory)
+		fmt.Println(filename)
 		// creating file to be written to
 		newFile, err := os.Create(directory + filename)
 		if err == nil {
