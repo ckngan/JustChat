@@ -356,7 +356,6 @@ func getClientPassword() string {
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-			// checkError(err)
 		}
 		fmt.Println()
 		inputPword := string(bytePassword)
@@ -554,17 +553,27 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 	if receiveFilePermission(filename) {
 		directory := getDownloadDirectory()
 		// creating file to be written to
-		newFile, err := os.Create(directory + "/" + filename)
-		checkError(err)
+		newFile, err := os.Create(directory + filename)
+		if err == nil {
 
-		// writing file received from rpc
-		n, err := newFile.Write(filedata)
-		checkError(err)
-		fmt.Println()
-		output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
-		messageChannel <- output
-		msgConditional.Signal()
-		return "Received"
+			// writing file received from rpc
+			n, err := newFile.Write(filedata)
+			if err != nil {
+				messageChannel <- "Error: Cannot write file"
+				msgConditional.Signal()
+				return "Decline"
+			}
+			fmt.Println()
+			output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
+			messageChannel <- output
+			msgConditional.Signal()
+			return "Received"
+		} else {
+			messageChannel <- "Error: Check filepath"
+			msgConditional.Signal()
+			return "Decline"
+		}
+
 	} else {
 		return "Decline"
 	}
