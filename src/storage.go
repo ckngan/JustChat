@@ -215,8 +215,16 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	clientListMutex.Lock()
 	sendPublicFileClients(file)
 	clientListMutex.Unlock()
+	/*
 	//store in k-1 other servers and keep track
-
+	storeFile := StoreFileData{
+		UserName : args.UserName,
+		UDP_IPPORT: RECEIVE_PING_ADDR,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	kStores(storeFile)
+*/
 	reply.Message = "success"
 	return nil
 }
@@ -899,4 +907,21 @@ func sendPublicFileClients(file FileData){
 	}
 }
 
+func kStores(file StoreFileData){
+
+	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("lOAD BALANCER isn't accepting tcp conns..... ")
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.StoreKFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+
+}
 
