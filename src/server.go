@@ -25,29 +25,29 @@ type LBService int
 
 //Client object
 type ClientItem struct {
-	username   string
-	password   string
+	username      string
+	password      string
 	currentServer string //this is the server's unique UDP_IPPORT string
-	nextClient *ClientItem
+	nextClient    *ClientItem
 }
 
 type ServerItem struct {
-	UDP_IPPORT string
+	UDP_IPPORT        string
 	RPC_SERVER_IPPORT string
 	RPC_CLIENT_IPPORT string
-	Clients    int
-	NextServer *ServerItem
+	Clients           int
+	NextServer        *ServerItem
 }
 
 type LoadBalancer struct {
 	Address string
-	Status string
+	Status  string
 }
 
 type HeartBeatItem struct {
-	Node *ServerItem
+	Node      *ServerItem
 	NumMissed int
-	Next *HeartBeatItem
+	Next      *HeartBeatItem
 }
 
 /* ---------------MESSAGE TYPES-------------*/
@@ -96,7 +96,7 @@ type LBMessage struct {
 
 type LBDataReply struct {
 	clients *ClientItem
-	nodes *ServerItem
+	nodes   *ServerItem
 }
 
 /*
@@ -139,9 +139,9 @@ func main() {
 	nodeConnAdress = os.Args[2]
 	heartbeatAddr = os.Args[3]
 
-	LBServers = []LoadBalancer{ LoadBalancer{"127.0.0.1:10001", "offline"},
-								LoadBalancer{"127.0.0.1:10002", "offline"},
-								LoadBalancer{"127.0.0.1:10003", "offline"}}
+	LBServers = []LoadBalancer{LoadBalancer{"127.0.0.1:10001", "offline"},
+		LoadBalancer{"127.0.0.1:10002", "offline"},
+		LoadBalancer{"127.0.0.1:10003", "offline"}}
 
 	////Print out address information
 	ip := GetLocalIP()
@@ -158,7 +158,7 @@ func main() {
 
 	// Create log
 	Logger = govec.InitializeMutipleExecutions("lb "+ipV4, "sys")
-	Logger.LogThis("LB was initialized", "lb " + ipV4, "{\"lb " + ipV4 + "\":1}")
+	Logger.LogThis("LB was initialized", "lb "+ipV4, "{\"lb "+ipV4+"\":1}")
 
 	//Locks
 	serverListMutex = sync.Mutex{}
@@ -171,10 +171,8 @@ func main() {
 	clientList = nil
 	serverList = nil
 
-
 	//Startup Method to get client list and server list from existing load balancers
 	initializeLB()
-
 
 	//Run heartbeet check to see if nodes are still running
 	go heartbeetCheck()
@@ -243,15 +241,16 @@ type NodeToRemove struct {
 type LBReply struct {
 	Message string
 }
-func heartbeetCheck(){
+
+func heartbeetCheck() {
 	for {
 		time.Sleep(2 * time.Second)
-		if(serverList == nil){
+		if serverList == nil {
 			println("No Servers")
 		} else {
 			time.Sleep(20 * time.Second)
 			_, err := rpc.Dial("tcp", serverList.RPC_SERVER_IPPORT)
-			if (err != nil){
+			if err != nil {
 				println("Error: ", err.Error())
 			} else {
 				println("Connected to Node")
@@ -272,27 +271,27 @@ func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
 }
 
-func contactLBToAnnounceSelf(i int){
+func contactLBToAnnounceSelf(i int) {
 
 }
 
 func getInfoFromFirstLB() {
 	var i = 0
-	for (i < 3) {
-		if (LBServers[i].Status == "online"  &&  i != lbDesignation){
-			println("Online: I",i)
+	for i < 3 {
+		if LBServers[i].Status == "online" && i != lbDesignation {
+			println("Online: I", i)
 			break
 		}
 		i++
 	}
 
-	if (i == 3){
+	if i == 3 {
 		println("I am the only one online")
 		return
 	}
 
 	conn, err := rpc.Dial("tcp", LBServers[i].Address)
-	if (err != nil){
+	if err != nil {
 		println("Error: ", err.Error())
 	}
 
@@ -301,7 +300,7 @@ func getInfoFromFirstLB() {
 
 	conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
 
-	if(lbReply.clients != nil){
+	if lbReply.clients != nil {
 		println(lbReply.clients.username)
 	}
 
@@ -312,28 +311,26 @@ func initializeLB() {
 	lbDesignation = -1
 	var i = 0
 	//check if designation already used
-	for (i < 3) {
+	for i < 3 {
 		//dial and check for err
 		_, err := rpc.Dial("tcp", LBServers[i].Address)
-		if ((err != nil) && (lbDesignation == -1)) {
+		if (err != nil) && (lbDesignation == -1) {
 			lbDesignation = i
 			//println("Error: ", err.Error())
 			println("I am number: ", lbDesignation)
-		} else if ((err == nil)){
+		} else if err == nil {
 			println("LoadBalancer ", i, " is online")
 			addLBToActiveList(i)
 			contactLBToAnnounceSelf(i)
 
 		}
 
-
-
 		i++
 	}
 
 	//If all load balancer spots are taken, shut down
 	//There can't be more than 3
-	if (lbDesignation == -1) {
+	if lbDesignation == -1 {
 		println("3 Load Balancers Running. \n No More Needed.\nShutting Down....")
 		os.Exit(2)
 	}
@@ -341,7 +338,6 @@ func initializeLB() {
 	//if so, increment and retry
 
 	//if at 2 and already used, os.exit
-
 
 	//get information from other load balancers (client list and node list)
 	getInfoFromFirstLB()
@@ -425,8 +421,6 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 
 	//TODO: need restart implementation
 
-
-
 	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
 
 	println("\n\nNew Node\n-------------")
@@ -434,7 +428,6 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 	println(newNode.RPC_SERVER_IPPORT)
 	println(newNode.RPC_CLIENT_IPPORT)
 	println(newNode.Clients)
-
 
 	if serverList == nil {
 		serverList = newNode
@@ -452,7 +445,7 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 func allertAllNodes(newNode *ServerItem) {
 	//dial all active nodes and alert them of the new node in the system
 	next := serverList
-	for (next != nil){
+	for next != nil {
 		conn, err := rpc.Dial("tcp", next.RPC_SERVER_IPPORT)
 		if err != nil {
 			println("Error dialing node w/UDP info of: ", next.UDP_IPPORT)
@@ -501,14 +494,11 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 	reply.clients = clientList
 	reply.nodes = serverList
 
-
 	nodeConditional.L.Unlock()
 	clientConditional.L.Unlock()
 
 	return nil
 }
-
-
 
 /*
 	RPC METHODS FOR NODES
@@ -520,7 +510,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	nodeConditional.L.Lock()
 
-    println("A new node is trying to connect", message.UDP_IPPORT)
+	println("A new node is trying to connect", message.UDP_IPPORT)
 	if isNewNode(message.UDP_IPPORT) {
 		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT)
 	}
@@ -528,7 +518,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 	newNode := NewNodeSetup{
 		RPC_CLIENT_IPPORT: message.RPC_CLIENT_IPPORT,
 		RPC_SERVER_IPPORT: message.RPC_SERVER_IPPORT,
-		UDP_IPPORT: message.UDP_IPPORT}
+		UDP_IPPORT:        message.UDP_IPPORT}
 
 	notifyServersOfNewNode(newNode)
 	reply.ListOfNodes = serverList
@@ -577,7 +567,6 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 		rpcUpdateMessage.ServerName = "Server X"
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
-
 
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
@@ -634,26 +623,26 @@ func printOutAllClients() {
 	return
 }
 
-func notifyServersOfNewNode(newNode NewNodeSetup){
+func notifyServersOfNewNode(newNode NewNodeSetup) {
 
-		next := serverList
+	next := serverList
 
 	for next != nil {
 		systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 		//checkError(err)
 		if err != nil {
-			println("Notfifying nodes of new node: Node ",(*next).UDP_IPPORT," isn't accepting tcp conns so skip it...")
+			println("Notfifying nodes of new node: Node ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
 			//it's dead but the ping will eventually take care of it
-        } else {
-		var reply ServerReply
+		} else {
+			var reply ServerReply
 
-		err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
-		checkError(err)
-		if err == nil {
-		fmt.Println("we received a reply from the server: ", reply.Message)
+			err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
+			checkError(err)
+			if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+			}
+			systemService.Close()
 		}
-		systemService.Close()
-        }
 		next = (*next).NextServer
 	}
 }

@@ -80,19 +80,13 @@ var loadBalancers []string
 // buffer Max
 const bufferMax int = 50
 
-// Storage for incoming messages
-var incomingMessageBuffer []ClientMessage
-
 // Client Username
 var username string
 
 // Client Password
 var password string
 
-// A 'pointer' that keeps track of new incoming messages
-var bufferCount int
-var readBufferCount int
-
+// A channel to pipe incoming messages to
 var messageChannel chan string
 
 // Load Balancer connection
@@ -101,6 +95,7 @@ var loadBalancer *rpc.Client
 // GoVector log
 var Logger *govec.GoLog
 
+//========================== Client RPC Service ======================== //
 //RPC Value for receiving messages
 type ClientMessageService int
 
@@ -152,25 +147,13 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
 	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
-	messageBody := strings.Split(editText(args.Message, 33, 1), "\n")[0]
+	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
 	Logger.LogLocalEvent("client received global message")
 
 	reply.Message = ""
 	return nil
-	/*var clientMessage ClientMessage
-	clientMessage.UserName = args.UserName
-	clientMessage.Message = args.Message
-
-	if bufferCount < bufferMax {
-	incomingMessageBuffer[bufferCount] = clientMessage
-	bufferCount++
-	} else {
-	// reset buffer Count
-	bufferCount = 0
-	incomingMessageBuffer[bufferCount] = clientMessage
-	}*/
 }
 
 // Method to handle private rpc messages from clients
@@ -200,7 +183,7 @@ func main() {
 	loadBalancer3 := os.Args[3]
 	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
 
-	incomingMessageBuffer = make([]ClientMessage, bufferMax)
+	// allocate messageChannel for global access
 	messageChannel = make(chan string, bufferMax)
 
 	// Registering RPC service for client's server
@@ -238,8 +221,6 @@ func main() {
 		}
 	}()
 
-	// continuously check for server connection -- possibly chat serverMessage
-	// if chat server disconnects, reconnect to load balancer, saving state
 	clientSetup()
 
 	clientServer.Close()
@@ -276,9 +257,14 @@ func startupChatConnection() {
 			Logger.LogLocalEvent("connected to a loadBalancer")
 			// initializing rpc load balancer
 			loadBalancer = conn
+			joinLoadBalancerServer()
 			break
 		}
 	}
+	return
+}
+
+func joinLoadBalancerServer() {
 
 	var reply ServerReply
 	var message NewClientSetup
@@ -308,7 +294,6 @@ func startupChatConnection() {
 			fmt.Println(editText("Username name already taken\n", 31, 1))
 		}
 	}
-	return
 }
 
 func initChatServerConnection() {
@@ -397,7 +382,7 @@ func getMessage() string {
 	consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		fmt.Print(editText(consoleUsername, 44, 1), ":")
+		//fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -406,19 +391,19 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
-	flushToConsole()
 	return message
 }
 
 // Method to handle all chat input from client
 func chat() {
 	for {
-		//flushToConsole()
+		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
 
 		message := getMessage()
 		messageArr := strings.Split(message, "#")
 		filterAndSendMessage(messageArr)
+		//flushToConsole()
 	}
 }
 
@@ -433,12 +418,12 @@ func filterAndSendMessage(msg []string) {
 	if len(msg) == 1 {
 		sendMsg.Message = command
 		sendMsg.UserName = username
-		consoleUsername := strings.Split(username, "\n")[0]
-		messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
+		// consoleUsername := strings.Split(username, "\n")[0]
+		// messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
 		// do something with reply
-		messageChannel <- reply.Message
+		// messageChannel <- reply.Message
 
 	} else if len(msg) == 3 {
 		command = strings.TrimSpace(msg[1])
@@ -546,17 +531,19 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 
 // Method to print messages to console in order of receipt
 func flushToConsole() {
+	// signal that flushing to console is done
+	c := make(chan int)
 	go func() {
 		for {
 			select {
 			case message := <-messageChannel:
 				fmt.Println(message)
 			default:
-				break
+				c <- 1
 			}
 		}
-		close(messageChannel)
 	}()
+	<-c
 	return
 }
 
