@@ -31,6 +31,10 @@ type ServerReply struct {
 	Message string // value; depends on the call
 }
 
+type MessageObj struct {
+	Message string
+}
+
 type NodeListReply struct {
 	ListOfNodes *ServerItem
 }
@@ -132,18 +136,17 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 
 func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
 	println("We received a new message")
-	println("username: " + args.ClientMessage.UserName + " Message: " + args.ClientMessage.Message + " Server: " + args.ServerId + " Clock #" + args.Clock)
-	
+
 	inClockedMsg := ClockedClientMsg{
-		ClientMessage: args.ClientMessage,
+		ClientMsg: args.ClientMsg,
 		ServerId: args.ServerId,
-		Clock: args.Clock
-	}
-	
+		Clock: args.Clock}
+
 	// TODO add to buffer
 
+
 	clientListMutex.Lock()
-	sendPublicMsgClients(inClockedMsg.ClientMessage)
+	sendPublicMsgClients(inClockedMsg.ClientMsg)
 	clientListMutex.Unlock()
 
 	reply.Message = "success"
@@ -252,16 +255,15 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	message := ClientMessage{
 		UserName: args.UserName,
-		Message:  args.Message
-	}
+		Message:  args.Message}
 
 	thisClock++
 
 	serverListMutex.Lock()
-	sendPublicMsgServers(message)
+	go sendPublicMsgServers(message)
 	serverListMutex.Unlock()
 	clientListMutex.Lock()
-	sendPublicMsgClients(message)
+	go sendPublicMsgClients(message)
 	clientListMutex.Unlock()
 
 	//TODO:send to k other servers to STORE
@@ -302,11 +304,16 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 }
 
 // Method to request client information for private correspondence
-func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply) error {
+func (ms *MessageService) SendPrivate(args *MessageObj, reply *ClientInfo) error {
 	println("We received a new file")
-	println("username requested: " + args.UserName + "filename:" + args.FileName)
+	println("username requested: " + args.Message)
 	//find requested user's IP and send it back
-	reply.Message = "success"
+	rep := getAddr(args.Message)
+
+	reply.UserName = args.Message
+	reply.RPC_IPPORT = rep
+
+
 	return nil
 }
 
@@ -554,7 +561,7 @@ func initPingServers(LocalAddr *net.UDPAddr) {
 		}
 
 		println("Starting timer")
-		timer1 := time.NewTimer(time.Second * 10)
+		timer1 := time.NewTimer(time.Second * 1)
 		<-timer1.C
 		println("Timer's up")
 	}
@@ -806,6 +813,21 @@ func isNewClient(ident string) bool {
 	return true
 }
 
+func returnClientAddr(ident string) string {
+
+	next := clientList
+
+	for next != nil {
+		if (*next).Username == ident {
+			return (*next).RPC_IPPORT
+		}
+		next = (*next).NextClient
+	}
+
+	return "not found"
+}
+
+
 func sizeOfClientList() (total int) {
 	next := clientList
 	total = 0
@@ -834,10 +856,9 @@ func sendPublicMsgServers(message ClientMessage) {
 	next := serverList
 
 	clockedMsg := ClockedClientMsg{
-		ClientMessage: message,
+		ClientMsg: message,
 		ServerId: 	RECEIVE_PING_ADDR,
-		Clock: thisClock
-	}
+		Clock: thisClock}
 
 	for next != nil {
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
@@ -864,25 +885,28 @@ func sendPublicMsgClients(message ClientMessage) {
 	next := clientList
 
 	for next != nil {
-		//if (*next).Username != message.UserName {
-		systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
-		//checkError(err)
-		if err != nil {
-			println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
-			//it's dead but the ping will eventually take care of it
-		} else {
-			var reply ServerReply
-			// client api uses ClientMessageService
-			err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
-			checkError(err)
-			if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
-			}
-			systemService.Close()
+
+		if (*next).Username != message.UserName {
+			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
+				//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
+				deleteClientFromList((*next).Username)
+			} else {
+				var reply ServerReply
+				// client api uses ClientMessageService
+				err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+				checkError(err)
+				if err == nil {
+					fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
 		}
-		//}
-		next = (*next).NextClient
+
 	}
+	next = (*next).NextClient
+}
 }
 
 func storeFile(file FileData) {
@@ -963,4 +987,60 @@ func kStores(file StoreFileData) {
 		systemService.Close()
 	}
 
+}
+
+
+//
+//This method will remove a node from the list of server nodes with the specified
+//UDP_IPPORT
+//
+//*****Make sure you lock access to the clientList before callng this method*******
+func deleteClientFromList(uname string) {
+
+
+	//initialize variable
+	i := clientList
+
+	//if there are no clients, return
+	//Shouldn't happen, but just in case
+	if(i==nil){
+		return
+	}
+	//if i is the one we want to delete, remove it and return
+	if(i.Username == uname){
+		clientList = (*i).NextClient
+		return
+	}
+
+	//if i is not the one we want, search until it is found
+	j := (*i).NextClient
+
+	for(j != nil) {
+		//if found, delete
+		if(j.Username == uname){
+			(*i).NextClient = (*j).NextClient
+			return
+		}
+
+		i = (*i).NextClient
+		j = (*i).NextClient
+	}
+
+	return
+}
+
+func getAddr(uname string) string{
+	systemService, err := rpc.Dial("tcp",LOAD_BALANCER_IPPORT)
+	checkError(err)
+
+	var reply MessageObj
+
+	messageObject := MessageObj{
+		Message: uname}
+	println("getting client addr from server")
+	err = systemService.Call("NodeService.GetClientAddr", messageObject, &reply)
+	checkError(err)
+	fmt.Println("we received a reply from the server: ", reply.Message)
+	systemService.Close()
+	return reply.Message
 }
