@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/arcaneiceman/GoVector/govec"
@@ -60,11 +61,6 @@ type ServerReply struct {
 	Message string
 }
 
-//Retrun to client
-type ClientReply struct {
-	Message string
-}
-
 /* Global Variables */
 
 // RPC of chat server
@@ -95,12 +91,16 @@ var loadBalancer *rpc.Client
 // GoVector log
 var Logger *govec.GoLog
 
+//locks
+var msgMutex sync.Mutex
+var msgConditional *sync.Cond
+
 //========================== Client RPC Service ======================== //
 //RPC Value for receiving messages
 type ClientMessageService int
 
 // Method for a client to call another client to transfer file data
-func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply) error {
+func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
 
 	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
 	Logger.LogLocalEvent("received file transfer")
@@ -108,7 +108,7 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply
 }
 
 // Method to handle private rpc messages from clients
-func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ClientReply) error {
+func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
 	messageOwner := editText(args.UserName, 42, 1)
 	output := privateFlag + messageOwner
@@ -120,11 +120,14 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Clie
 }
 
 // Method the load balancer calls on the clients to update rpc addresses
-func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply) error {
+func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ServerReply) error {
 	NewRpcChatServer = args.ServerRpcAddress
 	reply.Message = ""
 	Logger.LogLocalEvent("rpc chat server updated")
 
+
+
+	fmt.Print("Call from LB\n")
 	// make the rpc call to the server as it's updated
 	attempts := 0
 	for {
@@ -134,6 +137,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 		}
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
+			fmt.Print(NewRpcChatServer)
 			fmt.Print(editText("Error connecting to JustChat\n", 31, 1))
 			attempts++
 		} else {
@@ -145,11 +149,12 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 }
 
 // Method for server to call client to receive message
-func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
+func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
 	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
 	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
+	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
 
 	reply.Message = ""
@@ -157,12 +162,13 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Clie
 }
 
 // Method to handle private rpc messages from clients
-func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ClientReply) error {
+func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
 	messageOwner := editText(args.UserName, 42, 1)
 	messageBody := editText(args.Message, 33, 1)
 	output := privateFlag + messageOwner + ": " + messageBody
 	messageChannel <- output
+	msgConditional.Signal()
 	Logger.LogLocalEvent("client received private message")
 
 	reply.Message = ""
@@ -182,6 +188,9 @@ func main() {
 	loadBalancer2 := os.Args[2]
 	loadBalancer3 := os.Args[3]
 	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
+
+	msgMutex = sync.Mutex{}
+	msgConditional = sync.NewCond(&msgMutex)
 
 	// allocate messageChannel for global access
 	messageChannel = make(chan string, bufferMax)
@@ -244,23 +253,32 @@ func clientSetup() {
 // Method to initiate server connection
 func startupChatConnection() {
 
-	// Welcome
-	fmt.Println()
-	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
-	fmt.Println()
-
 	// Connecting to a LoadBalancer
-	for i := 0; i < len(loadBalancers); i++ {
+	i := 0
+	for ; i < len(loadBalancers); i++ {
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
-
 		if err == nil {
 			Logger.LogLocalEvent("connected to a loadBalancer")
+			// Welcome
+			fmt.Println()
+			fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+			fmt.Println()
 			// initializing rpc load balancer
 			loadBalancer = conn
 			joinLoadBalancerServer()
 			break
 		}
 	}
+
+	if i == 3 {
+		os.Exit(-1)
+	}
+
+	// Welcome
+	fmt.Println()
+	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+	fmt.Println()
+
 	return
 }
 
@@ -370,7 +388,6 @@ func getDownloadDirectory() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
-	flushToConsole()
 	return filename
 }
 
@@ -379,10 +396,10 @@ func getMessage() string {
 
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
-	consoleUsername := strings.Split(username, "\n")[0]
+	//consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		fmt.Print(editText(consoleUsername, 44, 1), ":")
+		//fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -396,19 +413,17 @@ func getMessage() string {
 
 // Method to handle all chat input from client
 func chat() {
+	// method to receive messages from channel
+	go flushToConsole()
 	for {
-		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
-
 		message := getMessage()
 		messageArr := strings.Split(message, "#")
 		filterAndSendMessage(messageArr)
-		//flushToConsole()
 	}
 }
 
 // method to filter messages and then send
-// TODO:
 func filterAndSendMessage(msg []string) {
 
 	var reply ServerReply
@@ -416,28 +431,36 @@ func filterAndSendMessage(msg []string) {
 
 	command := msg[0]
 	if len(msg) == 1 {
+
 		sendMsg.Message = command
 		sendMsg.UserName = username
-		//consoleUsername := strings.Split(username, "\n")[0]
-		//messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
-		// do something with reply
-		// messageChannel <- reply.Message
 
-	} else if len(msg) == 3 {
+	} else if len(msg) == 2 {
 		command = strings.TrimSpace(msg[1])
+		if command == "commands" {
+			messageCommands()
+			return
+		}
+	} else if len(msg) == 3 {
+
+		command = strings.TrimSpace(msg[1])
+		file := strings.TrimSpace(msg[2])
+
 		if command == "share" {
-			sendPublicFile(strings.TrimSpace(msg[2]))
+			sendPublicFile(file)
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
 			return
 		}
 	} else if len(msg) == 4 {
+
 		command = strings.TrimSpace(msg[1])
 		user := strings.TrimSpace(msg[2])
 		message := strings.TrimSpace(msg[3])
+
 		if command == "share" {
 			sendPrivateFile(user, message)
 		} else if command == "message" {
@@ -452,6 +475,7 @@ func filterAndSendMessage(msg []string) {
 
 // method to send public file
 func sendPublicFile(filepath string) {
+
 	var reply ServerReply
 	var fileData FileData
 	fileData = packageFile(filepath)
@@ -481,7 +505,17 @@ func packageFile(filepath string) (fileData FileData) {
 }
 
 // method to send private file
+// func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply)
 func sendPrivateFile(user string, filepath string) {
+	var request ClientRequest
+	var reply ServerReply
+
+	request.UserName = username
+	request.RequestedUsername = user
+	request.RpcAddress = clientRpcAddress
+	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
+	checkError(err)
+	// reply should be IP port of the
 	return
 }
 
@@ -528,6 +562,7 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 		fmt.Println()
 		output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
 		messageChannel <- output
+		msgConditional.Signal()
 		return "Received"
 	} else {
 		return "Decline"
@@ -536,20 +571,16 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 
 // Method to print messages to console in order of receipt
 func flushToConsole() {
-	// signal that flushing to console is done
-	c := make(chan int)
-	go func() {
-		for {
-			select {
-			case message := <-messageChannel:
-				fmt.Println(message)
-			default:
-				c <- 1
-			}
+	for {
+		msgConditional.L.Lock()
+		select {
+		case message := <-messageChannel:
+			fmt.Println(message)
+		default:
+			msgConditional.Wait()
 		}
-	}()
-	<-c
-	return
+		msgConditional.L.Unlock()
+	}
 }
 
 // method to print the commands users can use

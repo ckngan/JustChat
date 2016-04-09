@@ -63,8 +63,8 @@ type ClientMessage struct {
 // Clock stamped client message for ordered chat history
 type ClockedClientMsg struct {
 	ClientMsg ClientMessage
-	ServerId string
-	Clock uint64
+	ServerId  string
+	Clock     uint64
 }
 
 type ClientRequest struct {
@@ -123,7 +123,6 @@ var thisClock int // number of messages received from own clients
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
 var numMsgsRcvd int // # of messages this node has received
 
-
 //****************************BACK-END RPC METHODS***********************************//
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
 	println("A new server node has joined the system")
@@ -140,8 +139,8 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 
 	inClockedMsg := ClockedClientMsg{
 		ClientMsg: args.ClientMsg,
-		ServerId: args.ServerId,
-		Clock: args.Clock}
+		ServerId:  args.ServerId,
+		Clock:     args.Clock}
 
 	numMsgsRcvd++
 	// toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
@@ -319,7 +318,6 @@ func (ms *MessageService) SendPrivate(args *MessageObj, reply *ClientInfo) error
 	reply.UserName = args.Message
 	reply.RPC_IPPORT = rep
 
-
 	return nil
 }
 
@@ -370,15 +368,15 @@ func main() {
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
-
+	ip := getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
 	go func() {
-		systemListenServe("localhost:0", c)
+		systemListenServe(ip+":0", c)
 	}()
 	RPC_system_port := <-c
-	RPC_SYSTEM_IPPORT = "localhost" + ":" + strconv.Itoa(RPC_system_port)
+	RPC_SYSTEM_IPPORT = ip + ":" + strconv.Itoa(RPC_system_port)
 	println("RPC PORT FOR SYSTEMS: " + RPC_SYSTEM_IPPORT)
 	/////////////////////////////////////////////////////////////////////////////////////////
 	//CLIENT tcp.rpc
@@ -387,10 +385,10 @@ func main() {
 	rpc.Register(messageService)
 	ch := make(chan int)
 	go func() {
-		clientListenServe("localhost:0", ch)
+		clientListenServe(ip+":0", ch)
 	}()
 	RPC_client_port := <-ch
-	RPC_CLIENT_IPPORT = "localhost" + ":" + strconv.Itoa(RPC_client_port)
+	RPC_CLIENT_IPPORT = ip + ":" + strconv.Itoa(RPC_client_port)
 	println("RPC PORT FOR CLIENTS: " + RPC_CLIENT_IPPORT)
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -398,7 +396,7 @@ func main() {
 	println("START")
 	PingAddr, err := net.ResolveUDPAddr("udp", SEND_PING_IPPORT)
 	checkError(err)
-	ListenAddr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	ListenAddr, err := net.ResolveUDPAddr("udp", ip+":0")
 	checkError(err)
 	ListenConn, err := net.ListenUDP("udp", ListenAddr)
 	checkError(err)
@@ -420,7 +418,7 @@ func main() {
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	/*
-	   	  connection, err := net.Dial("tcp", "localhost:8888")
+	   	  connection, err := net.Dial("tcp", ip+":8888")
 	       if err != nil {
 	           fmt.Println("There was an error making a connection")
 	       }
@@ -835,7 +833,6 @@ func returnClientAddr(ident string) string {
 	return "not found"
 }
 
-
 func sizeOfClientList() (total int) {
 	next := clientList
 	total = 0
@@ -865,8 +862,8 @@ func sendPublicMsgServers(message ClientMessage) {
 
 	clockedMsg := ClockedClientMsg{
 		ClientMsg: message,
-		ServerId: 	RECEIVE_PING_ADDR,
-		Clock: thisClock}
+		ServerId:  RECEIVE_PING_ADDR,
+		Clock:     thisClock}
 
 	// toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
@@ -912,11 +909,11 @@ func sendPublicMsgClients(message ClientMessage) {
 					fmt.Println("we received a reply from the server: ", reply.Message)
 				}
 				systemService.Close()
-		}
+			}
 
+		}
+		next = (*next).NextClient
 	}
-	next = (*next).NextClient
-}
 }
 
 func storeFile(file FileData) {
@@ -1011,11 +1008,11 @@ func deleteClientFromList(uname string) {
 
 	//if there are no clients, return
 	//Shouldn't happen, but just in case
-	if(i==nil){
+	if i == nil {
 		return
 	}
 	//if i is the one we want to delete, remove it and return
-	if(i.Username == uname){
+	if i.Username == uname {
 		clientList = (*i).NextClient
 		return
 	}
@@ -1023,9 +1020,9 @@ func deleteClientFromList(uname string) {
 	//if i is not the one we want, search until it is found
 	j := (*i).NextClient
 
-	for(j != nil) {
+	for j != nil {
 		//if found, delete
-		if(j.Username == uname){
+		if j.Username == uname {
 			(*i).NextClient = (*j).NextClient
 			return
 		}
@@ -1037,8 +1034,21 @@ func deleteClientFromList(uname string) {
 	return
 }
 
-func getAddr(uname string) string{
-	systemService, err := rpc.Dial("tcp",LOAD_BALANCER_IPPORT)
+func getIP() (ip string) {
+
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil && !ipv4.IsLoopback() {
+			//fmt.Println("IPv4: ", ipv4.String())
+			ip = ipv4.String()
+		}
+	}
+	return ip
+}
+
+func getAddr(uname string) string {
+	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
 
 	var reply MessageObj

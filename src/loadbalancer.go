@@ -241,7 +241,7 @@ func main() {
 		go rpc.ServeConn(messageNodeConn)
 	}
 }
- 
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	      LOCAL HELPER FUNCTIONS
@@ -290,7 +290,7 @@ func heartbeetCheck() {
 		time.Sleep(20 * time.Millisecond)
 		nodeConditional.L.Lock()
 
-		if(serverList == nil){
+		if serverList == nil {
 			//No servers connected
 
 		} else {
@@ -366,7 +366,6 @@ func getInfoFromFirstLB() {
 		println("Error 2: ", callError.Error())
 	}
 
-
 	clientList = lbReply.Clients
 	serverList = lbReply.Nodes
 
@@ -407,12 +406,11 @@ func initializeLB() {
 	return
 }
 
-
-func sendClientDataToAllLBs(c *ClientItem){
+func sendClientDataToAllLBs(c *ClientItem) {
 	i := 0
-	for(i < 3){
-		println("I: ",i)
-		if(LBServers[i].Status == "online" && i != lbDesignation){
+	for i < 3 {
+		println("I: ", i)
+		if LBServers[i].Status == "online" && i != lbDesignation {
 			println("Sending client to: ", i)
 
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
@@ -459,13 +457,10 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	println("about to lock NodeCond")
 	nodeConditional.L.Lock()
 
 	for serverList == nil {
-		println("Waiting")
 		nodeConditional.Wait()
-		println("Signaled")
 	}
 
 	next = serverList
@@ -621,7 +616,7 @@ func isNewNode(ident string) bool {
 	RPC METHODS FOR LOAD BALANCERS
 *****************************************************/
 func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
-	
+
 	nodeConditional.L.Lock()
 	if isNewNode(message.UDP_IPPORT) {
 		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT, false)
@@ -641,12 +636,10 @@ func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) e
 	clientConditional.L.Unlock()
 	clientConditional.Signal()
 
-
 	return nil
 }
 
 func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
-
 
 	if message.Message != "NIL" {
 
@@ -656,10 +649,8 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 		println(message.OnlineNumber)
 		LBServers[message.OnlineNumber].Status = "online"
 
-
 		reply.Clients = clientList
 		reply.Nodes = serverList
-
 
 		nodeConditional.L.Unlock()
 		clientConditional.L.Unlock()
@@ -667,7 +658,7 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 		println("New LB is online: ", message.OnlineNumber)
 		LBServers[message.OnlineNumber].Status = "online"
 
-		println("Status of ",message.OnlineNumber," is ",LBServers[message.OnlineNumber].Status)
+		println("Status of ", message.OnlineNumber, " is ", LBServers[message.OnlineNumber].Status)
 	}
 
 	return nil
@@ -764,7 +755,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 		rpcUpdateMessage.ServerName = "Server X"
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
-
+		println(rpcUpdateMessage.ServerRpcAddress)
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
@@ -816,7 +807,6 @@ func printOutAllClients() {
 		fmt.Print((*toPrint).Username)
 		toPrint = (*toPrint).NextClient
 	}
-
 
 	return
 }
