@@ -295,7 +295,9 @@ func heartbeetCheck() {
 
 		} else {
 			i := serverList
+
 			for i != nil {
+
 				_, err := rpc.Dial("tcp", i.RPC_SERVER_IPPORT)
 				if err != nil {
 					//assume node is dead
@@ -347,7 +349,7 @@ func getInfoFromFirstLB() {
 		println("I am the only one online")
 		return
 	}
-	
+
 	conn, err := rpc.Dial("tcp", LBServers[i].Address)
 	if err != nil {
 		println("Error: ", err.Error())
@@ -357,13 +359,13 @@ func getInfoFromFirstLB() {
 	var lbReply LBDataReply
 
 	rpcUpdateMessage.Message = "M"
-	
+
 	callError := conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
 	if callError != nil {
 		println("Error 2: ", callError.Error())
 	}
 
-	
+
 	clientList = lbReply.Clients
 	serverList = lbReply.Nodes
 
@@ -385,6 +387,7 @@ func initializeLB() {
 
 			println("LoadBalancer ", i, " is online")
 			addLBToActiveList(i)
+
 		}
 
 		i++
@@ -553,7 +556,7 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 	nodeSetupMessage.UDP_IPPORT = newNode.UDP_IPPORT
 
 	var replyFromNode NodeListReply
-	
+
 	//iterate through all loadbalancers and alert them to the new node
 	var i = 0
 	for i < 3 {
@@ -643,15 +646,19 @@ func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) e
 
 func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
 
+
 	if message.Message != "NIL" {
+
 		clientConditional.L.Lock()
 		nodeConditional.L.Lock()
 
 		println(message.OnlineNumber)
 		LBServers[message.OnlineNumber].Status = "online"
 
+
 		reply.Clients = clientList
 		reply.Nodes = serverList
+
 
 		nodeConditional.L.Unlock()
 		clientConditional.L.Unlock()
