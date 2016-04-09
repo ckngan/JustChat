@@ -27,7 +27,8 @@ type LBService int
 type ClientItem struct {
 	Username   string
 	Password   string
-	CurrentServer string //this is the server's unique UDP_IPPORT string
+	CurrentServer string
+	PubRPCAddr string
 	NextClient *ClientItem
 }
 
@@ -105,6 +106,10 @@ type NodeToRemove struct {
 }
 type LBReply struct {
 	Message string
+}
+
+type NewClientObj struct {
+	ClientObject *ClientItem
 }
 
 /*
@@ -417,9 +422,33 @@ func initializeLB() {
 	return
 }
 
-func addClientToList(username string, password string) {
+func sendClientDataToAllLBs(c *ClientItem){
+	i := 3
+	for(i < 3){
+		if(LBServers[i].Status == "online" && i != lbDesignation){
+			conn, err := rpc.Dial("tcp", LBServers[i].Address)
+			if (err != nil){
+				println("Error: ", err.Error())
+			}
 
-	newClient := &ClientItem{username, password, "CurrentServer", nil}
+			var nC NewClientObj
+			var lbReply NodeListReply
+
+			nC.ClientObject = c
+
+			callError := conn.Call("LBService.NewClient", nC, &lbReply)
+			if (callError != nil){
+				println("Error 2: ", callError.Error())
+			}
+		}
+	}
+}
+
+func addClientToList(username string, password string, addr string) {
+
+	newClient := &ClientItem{username, password, "CurrentServer", addr, nil}
+
+	sendClientDataToAllLBs(newClient)
 
 	if clientList == nil {
 		clientList = newClient
@@ -428,6 +457,7 @@ func addClientToList(username string, password string) {
 		clientList = newClient
 	}
 
+	sendClientDataToAllLBs(newClient)
 	printOutAllClients()
 
 	return
@@ -466,7 +496,7 @@ func getServerForCLient() (*ServerItem, error) {
 	}
 }
 
-func authenticationFailure(username string, password string) bool {
+func authenticationFailure(username string, password string, pubAddr string) bool {
 
 	next := clientList
 
@@ -484,17 +514,23 @@ func authenticationFailure(username string, password string) bool {
 	}
 
 	//if username doesnt exist, add to list
-	addClientToList(username, password)
+	addClientToList(username, password, pubAddr)
 
 	return false
+}
+
+func addClient(newClient *ClientItem) {
+	if clientList == nil {
+		clientList = newClient
+	} else {
+		newClient.NextClient = clientList
+		clientList = newClient
+	}
 }
 
 func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
 
 	//TODO: need restart implementation
-
-
-
 	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
 
 	println("\n\nNew Node\n-------------")
@@ -595,13 +631,24 @@ func isNewNode(ident string) bool {
 func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	println("About to add new node")
 	nodeConditional.L.Lock()
-	println("locking")
 	if isNewNode(message.UDP_IPPORT) {
 		addNode(message.UDP_IPPORT, message.RPC_CLIENT_IPPORT, message.RPC_SERVER_IPPORT, false)
 	}
 
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
+
+	return nil
+}
+
+func (lbSvc *LBService) NewClient (message *NewClientObj, reply *NodeListReply) error {
+	println("New Client on other node being added to my list")
+	clientConditional.L.Lock()
+
+	addClient(message.ClientObject)
+
+	clientConditional.L.Lock()
+	clientConditional.Signal()
 
 	return nil
 }
@@ -661,6 +708,31 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 	return nil
 }
 
+type MessageObj struct {
+	Message string
+}
+
+func (nodeSvc *NodeService) GetClientAddr(uname *MessageObj, addr *MessageObj) error {
+	clientConditional.L.Lock()
+
+	username := uname.Message
+	i := clientList
+
+	for (i != nil){
+		if(i.Username == username){
+			addr.Message = i.PubRPCAddr
+			clientConditional.L.Unlock()
+			return nil
+		}
+
+		i = (*i).NextClient
+	}
+
+
+	clientConditional.L.Unlock()
+	return nil
+}
+
 /*****************************************
 	RPC METHODS FOR CLIENTS
 ******************************************/
@@ -674,7 +746,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	// otherwise, server replies, USERNAME-TAKEN
 
 	//check username, if taken reply username taken
-	if authenticationFailure(message.UserName, message.Password) {
+	if authenticationFailure(message.UserName, message.Password, message.RpcAddress) {
 		reply.Message = "USERNAME-TAKEN"
 		//else dial rpc
 
@@ -709,6 +781,8 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		Logger.LogLocalEvent("client joined chat service successful")
 		reply.Message = "WELCOME"
 	}
+
+
 
 	return nil
 }
