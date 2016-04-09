@@ -71,6 +71,23 @@ type FileData struct {
 	Data     []byte
 }
 
+
+type FileInfo struct{
+	UserName string
+	FileName string
+}
+
+// FileInfoData to build file structure in rpc call
+type StoreFileData struct {
+	UserName string
+	UDP_IPPORT string
+	FileName string
+	FileSize int64
+	Data     []byte
+}
+
+
+
 //Client object
 type ClientItem struct {
 	Username   string
@@ -148,15 +165,60 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 	return nil
 }
 
-func (nodeSvc *NodeService) GetFile(args *FileData, reply *ServerReply) error {
+
+func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 	println("gimme shit")
-	reply.Message = "success"
+ 	path:="../Files/"+args.UserName+"/"+args.FileName
+
+	fi, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		println("File "+path+" Doesn't Exist")
+		reply = nil
+
+	}else{
+
+	// re-open file
+	var file, errr = os.OpenFile(path, os.O_RDWR, 0644)
+	checkError(errr)
+	defer file.Close()
+
+
+		Data := make([]byte,fi.Size())
+
+	_, _ = file.Read(Data)
+
+	checkError(err)
+
+		reply.UserName = args.UserName
+		reply.FileName = args.FileName
+		reply.FileSize = fi.Size()
+		reply.Data 	 = Data
+
+}
+
 	return nil
 }
 
 func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
 	println("delete that shit i told you to store")
+
+	path:="../Files/"+args.UserName+"/"+args.FileName
+
+	// detect if file exists
+	_, err := os.Stat(path)
+
+	// create file if not exists
+	if os.IsNotExist(err) {
+		println("File "+path+" Doesn't Exist")
+		reply.Message = "File "+path+" Doesn't Exist"
+	}else{
+	err = os.Remove(path)
+	checkError(err)
 	reply.Message = "success"
+	}
+
+
 	return nil
 }
 
@@ -214,8 +276,16 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	clientListMutex.Lock()
 	sendPublicFileClients(file)
 	clientListMutex.Unlock()
+	/*
 	//store in k-1 other servers and keep track
-
+	storeFile := StoreFileData{
+		UserName : args.UserName,
+		UDP_IPPORT: RECEIVE_PING_ADDR,
+		FileName : args.FileName,
+		FileSize : args.FileSize,
+		Data     : args.Data}
+	kStores(storeFile)
+*/
 	reply.Message = "success"
 	return nil
 }
@@ -308,40 +378,9 @@ func main() {
 	x := sizeOfServerList()
 
 	println("WE RECEIVED A LIST OF SIZE: ", x)
-	//println("This is the first item in the list: ", serverList.UDP_IPPORT)
-	/*systemService, err := rpc.Dial("tcp", "localhost:53346")
-	checkError(err)
 
-	var kvVal ValReply;
-
-	clientMessage := ClientMessage{
-		Username : "Billy",
-		Message : "I hate everybody",
-		Password	: "PASSWORD"}
-	err = systemService.Call("MessageService.SendPublicMsg", clientMessage, &kvVal)
-	checkError(err)
-	fmt.Println("Server replied: " + kvVal.Val) */
-	///////////////////////////////////////////////////////////
 	fmt.Println("type of: ", reflect.TypeOf(RECEIVE_PING_ADDR))
 
-	//TESTING SENDPUBLICMSG
-
-	println("END UDP STUFF")
-
-	systemService, err := rpc.Dial("tcp", RPC_CLIENT_IPPORT)
-	checkError(err)
-
-	var reply ServerReply
-
-	clientMessage := ClientMessage{
-		UserName: "dude",
-		Message:  "this chat system sucks"}
-
-	err = systemService.Call("NodeService.SendPublicMsg", clientMessage, &reply)
-	checkError(err)
-	fmt.Println("we received a reply from the server: ", reply.Message)
-
-	//////////////////////////////////////////////
 	go initPingServers(PingAddr)
 	UDPService(ListenConn)
 
@@ -898,4 +937,21 @@ func sendPublicFileClients(file FileData){
 	}
 }
 
+func kStores(file StoreFileData){
+
+	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("lOAD BALANCER isn't accepting tcp conns..... ")
+        	} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.StoreKFile", file, &reply)
+				checkError(err)
+				if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				}
+				systemService.Close()
+        	}
+
+}
 

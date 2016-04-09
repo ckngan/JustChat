@@ -151,8 +151,8 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
-	messageOwner := editText(args.UserName, 42, 1)
-	messageBody := editText(args.Message, 33, 1)
+	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
+	messageBody := strings.Split(editText(args.Message, 33, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
 	Logger.LogLocalEvent("client received global message")
@@ -267,15 +267,18 @@ func startupChatConnection() {
 	fmt.Println()
 	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
 	fmt.Println()
-	// eventually will be used in some loop
-	n := 0
-	// Connecting to a LoadBalancer
-	conn, err := rpc.Dial("tcp", loadBalancers[n])
-	checkError(err)
-	Logger.LogLocalEvent("connected to a loadBalancer")
 
-	// initializing rpc load balancer
-	loadBalancer = conn
+	// Connecting to a LoadBalancer
+	for i := 0; i < len(loadBalancers); i++ {
+		conn, err := rpc.Dial("tcp", loadBalancers[i])
+
+		if err == nil {
+			Logger.LogLocalEvent("connected to a loadBalancer")
+			// initializing rpc load balancer
+			loadBalancer = conn
+			break
+		}
+	}
 
 	var reply ServerReply
 	var message NewClientSetup
@@ -368,7 +371,6 @@ func getClientPassword() string {
 // method to receive download directory from user
 // method also checks if directory exists
 func getDownloadDirectory() string {
-	flushToConsole()
 	// Reading input from user for download
 	filename := ""
 	command := "Please enter download directory to receive file:"
@@ -383,12 +385,12 @@ func getDownloadDirectory() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
+	flushToConsole()
 	return filename
 }
 
 // Method to get message from client's console
 func getMessage() string {
-	flushToConsole()
 
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
@@ -404,6 +406,7 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
+	flushToConsole()
 	return message
 }
 
