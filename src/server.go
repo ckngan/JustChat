@@ -44,6 +44,12 @@ type LoadBalancer struct {
 	Status string
 }
 
+type HeartBeatItem struct {
+	Node *ServerItem
+	NumMissed int
+	Next *HeartBeatItem
+}
+
 /* ---------------MESSAGE TYPES-------------*/
 // Struct to join chat service
 type NewClientSetup struct {
@@ -105,9 +111,10 @@ var lbDesignation int
 //List of All LoadBalance Servers
 var LBServers []LoadBalancer
 
-//List of clients
+//Lists
 var clientList *ClientItem
 var serverList *ServerItem
+var heartsToCheck *HeartBeatItem
 
 //List of locks
 var serverListMutex sync.Mutex
@@ -169,7 +176,7 @@ func main() {
 	initializeLB()
 
 
-	//Run heartbeet ( :P Cindy) check to see if nodes are still running
+	//Run heartbeet check to see if nodes are still running
 	go heartbeetCheck()
 
 	//setup to accept rpcCalls on the first availible port
@@ -230,14 +237,33 @@ func main() {
 /*
 	LOCAL HELPER FUNCTIONS
 */
-
+type NodeToRemove struct {
+	Node *ServerItem
+}
+type LBReply struct {
+	Message string
+}
 func heartbeetCheck(){
 	for {
 		time.Sleep(2 * time.Second)
 		if(serverList == nil){
 			println("No Servers")
 		} else {
+			time.Sleep(20 * time.Second)
+			_, err := rpc.Dial("tcp", serverList.RPC_SERVER_IPPORT)
+			if (err != nil){
+				println("Error: ", err.Error())
+			} else {
+				println("Connected to Node")
+			}
+			//var a NodeToRemove
+			//var b LBReply
 
+			//a.Node = serverList
+
+			//Call delete on itself
+			//conn.Call("NodeService.RemoveNode", a, &b)
+			//serverList = nil
 		}
 	}
 }

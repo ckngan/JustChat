@@ -195,6 +195,25 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply) e
 	return nil
 }
 
+//***********************Load Balancer RPC METHODS **********************************************//
+//method for deleting a dead storage node
+type NodeToRemove struct {
+	Node *ServerItem
+}
+type LBReply struct {
+	Message string
+}
+type BackService int
+func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
+	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
+	serverListMutex.Lock()
+	println("\n\nCall to delete")
+	deleteNodeFromList(nodeToRemove.Node.UDP_IPPORT)
+	println("Should be deleted")
+	serverListMutex.Unlock()
+	return nil
+}
+
 func main() {
 	////////////////////////////////////////////////////////////////////////////////////////
 	// PARSE ARGS
@@ -321,6 +340,46 @@ func checkError(err error) {
 		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
+}
+
+//
+//This method will remove a node from the list of server nodes with the specified
+//UDP_IPPORT
+//
+//*****Make sure you lock access to the serverList before callng this method*******
+func deleteNodeFromList(udpAddr string) {
+	//As every node is unique in its UDP address we can assume deletion after we find that address
+	//and return right away
+
+	//initialize variable
+	i := serverList
+
+	//if there are no servers, return
+	//Shouldn't happen, but just in case
+	if(i==nil){
+		return
+	}
+	//if i is the one we want to delete, remove it and return
+	if(i.UDP_IPPORT == udpAddr){
+		serverList = (*i).NextServer
+		return
+	}
+
+	//if i is not the one we want, search until it is found
+	j := (*i).NextServer
+
+	for(j != nil) {
+		//if found, delete
+		if(j.UDP_IPPORT == udpAddr){
+			(*i).NextServer = (*j).NextServer
+			return
+		}
+
+		i = (*i).NextServer
+		j = (*i).NextServer
+	}
+
+	return
 }
 
 /*
