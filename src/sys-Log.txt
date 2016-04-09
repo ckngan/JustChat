@@ -208,3 +208,233 @@ client 128.189.80.111:64487 {"client 128.189.80.111:64487":8}
 rpc connection started
 client 128.189.80.111:64487 {"client 128.189.80.111:64487":9}
 client received global message
+ 
+=== Execution #17  ===
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":1}
+LB was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":2}
+new storage node online
+ 
+=== Execution #18  ===
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":1}
+Client was initialized
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":2}
+connected to a loadBalancer
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":3}
+rpc client connection started
+ 
+=== Execution #19  ===
+client 192.168.0.107:64852 {"client 192.168.0.107:64852":1}
+Client was initialized
+client 192.168.0.107:64852 {"client 192.168.0.107:64852":2}
+connected to a loadBalancer
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":4}
+rpc client connection started
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":3}
+rpc connection started
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":5}
+client joined chat service successful
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":5}
+received message from server
+client 192.168.0.107:64852 {"client 192.168.0.107:64852":3}
+rpc connection started
+client 192.168.0.107:64852 {"client 192.168.0.107:64852":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":6}
+client joined chat service successful
+client 192.168.0.107:64852 {"client 192.168.0.107:64852":5}
+received message from server
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":6}
+rpc connection started
+client 192.168.0.107:64841 {"client 192.168.0.107:64841":7}
+client received global message
+ 
+=== Execution #20  ===
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":1}
+Client was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":7}
+rpc client connection started
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":2}
+connected to a loadBalancer
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":3}
+rpc connection started
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":8}
+client joined chat service successful
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":5}
+received message from server
+ 
+=== Execution #21  ===
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":1}
+Client was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":9}
+rpc client connection started
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":2}
+connected to a loadBalancer
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":3}
+rpc connection started
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":10}
+client joined chat service successful
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":5}
+received message from server
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":6}
+rpc connection started
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":7}
+client received global message
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":6}
+rpc connection started
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":7}
+client received global message
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":8}
+rpc connection started
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":9}
+client received global message
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":10}
+rpc connection started
+client 192.168.0.107:64936 {"client 192.168.0.107:64936":11}
+client received global message
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":8}
+rpc connection started
+client 192.168.0.107:64920 {"client 192.168.0.107:64920":9}
+client received global message
+ 
+=== Execution #22  ===
+client 192.168.0.107:65134 {"client 192.168.0.107:65134":1}
+Client was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":11}
+rpc client connection started
+client 192.168.0.107:65134 {"client 192.168.0.107:65134":2}
+connected to a loadBalancer
+ 
+=== Execution #23  ===
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":1}
+Client was initialized
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":2}
+connected to a loadBalancer
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":12}
+rpc client connection started
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":3}
+rpc connection started
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":13}
+client joined chat service successful
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":5}
+received message from server
+client 192.168.0.107:65134 {"client 192.168.0.107:65134":3}
+rpc connection started
+client 192.168.0.107:65134 {"client 192.168.0.107:65134":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":14}
+client joined chat service successful
+client 192.168.0.107:65134 {"client 192.168.0.107:65134":5}
+received message from server
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":6}
+rpc connection started
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":7}
+client received global message
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":8}
+rpc connection started
+client 192.168.0.107:65140 {"client 192.168.0.107:65140":9}
+client received global message
+ 
+=== Execution #24  ===
+client 192.168.0.107:65176 {"client 192.168.0.107:65176":1}
+Client was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":15}
+rpc client connection started
+client 192.168.0.107:65176 {"client 192.168.0.107:65176":2}
+connected to a loadBalancer
+client 192.168.0.107:65176 {"client 192.168.0.107:65176":3}
+rpc connection started
+client 192.168.0.107:65176 {"client 192.168.0.107:65176":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":16}
+client joined chat service successful
+client 192.168.0.107:65176 {"client 192.168.0.107:65176":5}
+received message from server
+ 
+=== Execution #25  ===
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":1}
+Client was initialized
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":17}
+rpc client connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":2}
+connected to a loadBalancer
+ 
+=== Execution #26  ===
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":1}
+Client was initialized
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":2}
+connected to a loadBalancer
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":18}
+rpc client connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":3}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":19}
+client joined chat service successful
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":5}
+received message from server
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":3}
+rpc connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":4}
+rpc chat server updated
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":20}
+client joined chat service successful
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":5}
+received message from server
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":6}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":7}
+client received global message
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":6}
+rpc connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":7}
+client received global message
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":8}
+rpc connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":9}
+client received global message
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":8}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":9}
+client received global message
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":10}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":11}
+client received global message
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":12}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":13}
+client received global message
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":14}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":15}
+client received global message
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":16}
+rpc connection started
+client 192.168.0.107:49171 {"client 192.168.0.107:49171":17}
+client received global message
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":10}
+rpc connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":11}
+client received global message
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":12}
+rpc connection started
+client 192.168.0.107:49165 {"client 192.168.0.107:49165":13}
+client received global message
+ 
+=== Execution #27  ===
+client 192.168.0.107:49197 {"client 192.168.0.107:49197":1}
+Client was initialized
+client 192.168.0.107:49197 {"client 192.168.0.107:49197":2}
+connected to a loadBalancer
+lb 192.168.0.107:64818 {"lb 192.168.0.107:64818":21}
+rpc client connection started

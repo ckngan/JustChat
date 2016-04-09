@@ -151,8 +151,8 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
-	messageOwner := editText(args.UserName, 42, 1)
-	messageBody := editText(args.Message, 33, 1)
+	messageOwner := strings.Split(editText(args.UserName, 45, 1), "\n")[0]
+	messageBody := strings.Split(editText(args.Message, 33, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
 	messageChannel <- output
 	Logger.LogLocalEvent("client received global message")
@@ -368,7 +368,6 @@ func getClientPassword() string {
 // method to receive download directory from user
 // method also checks if directory exists
 func getDownloadDirectory() string {
-	flushToConsole()
 	// Reading input from user for download
 	filename := ""
 	command := "Please enter download directory to receive file:"
@@ -383,12 +382,12 @@ func getDownloadDirectory() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
+	flushToConsole()
 	return filename
 }
 
 // Method to get message from client's console
 func getMessage() string {
-	flushToConsole()
 
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
@@ -404,6 +403,7 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
+	flushToConsole()
 	return message
 }
 
