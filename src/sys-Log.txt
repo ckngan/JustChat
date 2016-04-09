@@ -46,3 +46,37 @@ lb [::]:53408 {"lb [::]:53408":4}
 client joined chat service successful
 client 128.189.218.189:53890 {"client 128.189.218.189:53890":5}
 received message from server
+ 
+=== Execution #6  ===
+lb [::]:53455 {"lb [::]:53455":1}
+LB was initialized
+ 
+=== Execution #7  ===
+lb [::]:53467 {"lb [::]:53467":1}
+LB was initialized
+ 
+=== Execution #8  ===
+lb [::]:53514 {"lb [::]:53514":1}
+LB was initialized
+lb [::]:53514 {"lb [::]:53514":2}
+rpc client connection started
+lb [::]:53514 {"lb [::]:53514":3}
+new storage node online
+lb [::]:53514 {"lb [::]:53514":4}
+new storage node online
+ 
+=== Execution #9  ===
+client 128.189.218.32:60540 {"client 128.189.218.32:60540":1}
+Client was initialized
+lb [::]:53514 {"lb [::]:53514":5}
+rpc client connection started
+client 128.189.218.32:60540 {"client 128.189.218.32:60540":2}
+connected to a loadBalancer
+client 128.189.218.32:60540 {"client 128.189.218.32:60540":3}
+rpc connection started
+client 128.189.218.32:60540 {"client 128.189.218.32:60540":4}
+rpc chat server updated
+lb [::]:53514 {"lb [::]:53514":6}
+client joined chat service successful
+client 128.189.218.32:60540 {"client 128.189.218.32:60540":5}
+received message from server

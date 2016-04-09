@@ -119,8 +119,9 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
-var thisClock uint64 // number of messages received from own clients
+var thisClock int // number of messages received from own clients
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
+var numMsgsRcvd int // # of messages this node has received
 
 
 //****************************BACK-END RPC METHODS***********************************//
@@ -142,12 +143,14 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 		ServerId: args.ServerId,
 		Clock: args.Clock}
 
-	// TODO add to buffer
-
+	numMsgsRcvd++
+	// toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
 	clientListMutex.Lock()
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
 	clientListMutex.Unlock()
+
+	// checkBufFull()
 
 	reply.Message = "success"
 	return nil
@@ -258,6 +261,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 		Message:  args.Message}
 
 	thisClock++
+	numMsgsRcvd++
 
 	serverListMutex.Lock()
 	go sendPublicMsgServers(message)
@@ -265,6 +269,8 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 	clientListMutex.Lock()
 	go sendPublicMsgClients(message)
 	clientListMutex.Unlock()
+
+	// checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
 
 	//TODO:send to k other servers to STORE
 	reply.Message = "success"
@@ -357,8 +363,11 @@ func main() {
 	clientListMutex = &sync.Mutex{}
 	clientList = nil
 
-	toHistoryBuf = make([]ClockedClientMsg, 50)
+	// setup for chat history
+	//toHistoryBuf[0] = ClockedClientMsg{ClientMsg: ClientMessage{UserName: "bob", Message: "zzz"}, ServerId: "thisServer", Clock: 5}
 	thisClock = 0
+	numMsgsRcvd = 0
+
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
 
@@ -639,7 +648,6 @@ func UDPService(ServerConn *net.UDPConn) {
 /*
 * write back to server after a ping is received
  */
-
 func handleUDP(recmsg string, Conn *net.UDPConn, addr *net.UDPAddr) {
 	//println("WE MADE IT TO HANDLE")
 	buf := []byte(RECEIVE_PING_ADDR)
@@ -715,7 +723,7 @@ func joinStorageServers() {
 }
 
 /*
-* Add A node to our linked list of server nodes
+* Add a node to our linked list of server nodes
  */
 func addNode(udp string, clientRPC string, serverRPC string) {
 
@@ -860,6 +868,8 @@ func sendPublicMsgServers(message ClientMessage) {
 		ServerId: 	RECEIVE_PING_ADDR,
 		Clock: thisClock}
 
+	// toHistoryBuf[numMsgsRcvd-1] = clockedMsg
+
 	for next != nil {
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
@@ -989,14 +999,12 @@ func kStores(file StoreFileData) {
 
 }
 
-
 //
 //This method will remove a node from the list of server nodes with the specified
 //UDP_IPPORT
 //
 //*****Make sure you lock access to the clientList before callng this method*******
 func deleteClientFromList(uname string) {
-
 
 	//initialize variable
 	i := clientList
@@ -1044,3 +1052,17 @@ func getAddr(uname string) string{
 	systemService.Close()
 	return reply.Message
 }
+
+/*
+func checkBufFull() {
+	if numMsgsRcvd == 50 {
+		// TODO sort & write to file
+		fmt.Println(toHistoryBuf)
+
+		// flush all variables
+		thisClock = 0
+		numMsgsRcvd = 0
+		toHistoryBuf = nil
+	}
+}
+*/
