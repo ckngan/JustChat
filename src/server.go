@@ -955,7 +955,7 @@ func sendPublicFileClients(file FileData) {
 				//it's dead but the ping will eventually take care of it
 			} else {
 				var reply ServerReply
-				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
+				err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
 				checkError(err)
 				if err == nil {
 					fmt.Println("we received a reply from the server: ", reply.Message)

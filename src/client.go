@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -146,9 +147,11 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
-	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
-	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
-	output := messageOwner + ": " + messageBody
+
+	re := regexp.MustCompile(`\r?\n`)
+	messageOwner := editText(args.UserName, 33, 1)
+	messageBody := editText(args.Message, 32, 1)
+	output := re.ReplaceAllString(messageOwner+": "+messageBody, "")
 	messageChannel <- output
 	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
