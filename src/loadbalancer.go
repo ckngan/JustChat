@@ -755,7 +755,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 		rpcUpdateMessage.ServerName = "Server X"
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
-
+		println(rpcUpdateMessage.ServerRpcAddress)
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"

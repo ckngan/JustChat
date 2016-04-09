@@ -10,8 +10,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"sync"
+	"syscall"
+
 	"github.com/arcaneiceman/GoVector/govec"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -252,25 +253,27 @@ func clientSetup() {
 // Method to initiate server connection
 func startupChatConnection() {
 
-	// Welcome
-	fmt.Println()
-	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
-	fmt.Println()
-
 	// Connecting to a LoadBalancer
-	for i := 0; i < len(loadBalancers); i++ {
+	i := 0
+	for ; i < len(loadBalancers); i++ {
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
 		if err == nil {
 			Logger.LogLocalEvent("connected to a loadBalancer")
 			// initializing rpc load balancer
 			loadBalancer = conn
 			joinLoadBalancerServer()
-			return
+			break
 		}
 	}
 
-	fmt.Println("No Load Balancers")
-	os.Exit(2)
+	if i == 3 {
+		os.Exit(-1)
+	}
+
+	// Welcome
+	fmt.Println()
+	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+	fmt.Println()
 	return
 }
 
@@ -380,7 +383,6 @@ func getDownloadDirectory() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
-	flushToConsole()
 	return filename
 }
 
@@ -389,10 +391,10 @@ func getMessage() string {
 
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
-	consoleUsername := strings.Split(username, "\n")[0]
+	//consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		fmt.Print(editText(consoleUsername, 44, 1), ":")
+		//fmt.Print(editText(consoleUsername, 44, 1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
@@ -406,14 +408,13 @@ func getMessage() string {
 
 // Method to handle all chat input from client
 func chat() {
+	// method to receive messages from channel
+	go flushToConsole()
 	for {
-		flushToConsole()
 		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
-
 		message := getMessage()
 		messageArr := strings.Split(message, "#")
 		filterAndSendMessage(messageArr)
-		//flushToConsole()
 	}
 }
 
@@ -559,23 +560,16 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 
 // Method to print messages to console in order of receipt
 func flushToConsole() {
-	// signal that flushing to console is done
-	//c := make(chan int)
-	go func() {
-		for {
-			msgConditional.L.Lock()
-			select {
-			case message := <-messageChannel:
-				fmt.Println(message)
-			default:
-				msgConditional.Wait()
-			//	c <- 1
-			}
-			msgConditional.L.Unlock()
+	for {
+		msgConditional.L.Lock()
+		select {
+		case message := <-messageChannel:
+			fmt.Println(message)
+		default:
+			msgConditional.Wait()
 		}
-	}()
-	//<-c
-	return
+		msgConditional.L.Unlock()
+	}
 }
 
 // method to print the commands users can use
