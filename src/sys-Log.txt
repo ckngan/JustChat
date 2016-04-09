@@ -58,3 +58,25 @@ client 128.189.82.230:49859 {"client 128.189.82.230:49859":12}
 rpc connection started
 client 128.189.82.230:49859 {"client 128.189.82.230:49859":13}
 client received global message
+ 
+=== Execution #3  ===
+client 128.189.82.230:50035 {"client 128.189.82.230:50035":1}
+Client was initialized
+ 
+=== Execution #4  ===
+client 128.189.82.230:50043 {"client 128.189.82.230:50043":1}
+Client was initialized
+ 
+=== Execution #5  ===
+lb 128.189.82.230:50051 {"lb 128.189.82.230:50051":1}
+LB was initialized
+lb 128.189.82.230:50051 {"lb 128.189.82.230:50051":2}
+new storage node online
+ 
+=== Execution #6  ===
+client 128.189.82.230:50086 {"client 128.189.82.230:50086":1}
+Client was initialized
+lb 128.189.82.230:50051 {"lb 128.189.82.230:50051":3}
+rpc client connection started
+client 128.189.82.230:50086 {"client 128.189.82.230:50086":2}
+connected to a loadBalancer
