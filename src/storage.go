@@ -71,6 +71,7 @@ type FileData struct {
 	Data     []byte
 }
 
+
 //Client object
 type ClientItem struct {
 	Username   string

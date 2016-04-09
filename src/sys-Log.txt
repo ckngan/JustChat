@@ -1,0 +1,36 @@
+ 
+=== Execution #1  ===
+lb [::]:63255 {"lb [::]:63255":1}
+LB was initialized
+lb [::]:63255 {"lb [::]:63255":2}
+new storage node online
+lb [::]:63255 {"lb [::]:63255":3}
+new storage node online
+lb [::]:63255 {"lb [::]:63255":4}
+new storage node online
+ 
+=== Execution #2  ===
+lb [::]:49749 {"lb [::]:49749":1}
+LB was initialized
+lb [::]:49749 {"lb [::]:49749":2}
+new storage node online
+ 
+=== Execution #3  ===
+lb [::]:50261 {"lb [::]:50261":1}
+LB was initialized
+lb [::]:50261 {"lb [::]:50261":2}
+new storage node online
+lb [::]:50261 {"lb [::]:50261":3}
+new storage node online
+lb [::]:50261 {"lb [::]:50261":4}
+new storage node online
+lb [::]:50261 {"lb [::]:50261":5}
+new storage node online
+ 
+=== Execution #4  ===
+lb [::]:51491 {"lb [::]:51491":1}
+LB was initialized
+lb [::]:51491 {"lb [::]:51491":2}
+new storage node online
+lb [::]:51491 {"lb [::]:51491":3}
+new storage node online
