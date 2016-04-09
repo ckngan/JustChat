@@ -68,11 +68,6 @@ type NodeListReply struct {
 	ListOfNodes *ServerItem
 }
 
-//Retrun to client
-type ClientReply struct {
-	Message string
-}
-
 // address of chat server
 type ChatServer struct {
 	ServerName       string
@@ -292,10 +287,12 @@ func deleteNodeFromList(udpAddr string) {
 
 func heartbeetCheck() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(20 * time.Millisecond)
 		nodeConditional.L.Lock()
-		if serverList == nil {
-			println("No Servers")
+
+		if(serverList == nil){
+			//No servers connected
+
 		} else {
 			i := serverList
 			for i != nil {
@@ -305,7 +302,7 @@ func heartbeetCheck() {
 					println("He's Dead Jim!")
 					deleteNodeFromList(i.UDP_IPPORT)
 				} else {
-					println("Connected to Node")
+					//Server Connected
 				}
 
 				i = (*i).NextServer
@@ -350,7 +347,7 @@ func getInfoFromFirstLB() {
 		println("I am the only one online")
 		return
 	}
-	println("DIAL!!")
+	
 	conn, err := rpc.Dial("tcp", LBServers[i].Address)
 	if err != nil {
 		println("Error: ", err.Error())
@@ -360,13 +357,13 @@ func getInfoFromFirstLB() {
 	var lbReply LBDataReply
 
 	rpcUpdateMessage.Message = "M"
-	println("CALL!!")
+	
 	callError := conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
 	if callError != nil {
 		println("Error 2: ", callError.Error())
 	}
 
-	println("RETURN CALL!!")
+	
 	clientList = lbReply.Clients
 	serverList = lbReply.Nodes
 
@@ -406,10 +403,13 @@ func initializeLB() {
 	return
 }
 
-func sendClientDataToAllLBs(c *ClientItem) {
-	i := 3
-	for i < 3 {
-		if LBServers[i].Status == "online" && i != lbDesignation {
+
+func sendClientDataToAllLBs(c *ClientItem){
+	i := 0
+	for(i < 3){
+		if(LBServers[i].Status == "online" && i != lbDesignation){
+			println("Sending client to: ", i)
+
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
 			if err != nil {
 				println("Error: ", err.Error())
@@ -425,7 +425,10 @@ func sendClientDataToAllLBs(c *ClientItem) {
 				println("Error 2: ", callError.Error())
 			}
 		}
+
+		i++
 	}
+	return
 }
 
 func addClientToList(username string, password string, addr string) {
@@ -441,7 +444,6 @@ func addClientToList(username string, password string, addr string) {
 		clientList = newClient
 	}
 
-	sendClientDataToAllLBs(newClient)
 	printOutAllClients()
 
 	return
@@ -547,7 +549,7 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 	nodeSetupMessage.UDP_IPPORT = newNode.UDP_IPPORT
 
 	var replyFromNode NodeListReply
-	println("ALERTING")
+	
 	//iterate through all loadbalancers and alert them to the new node
 	var i = 0
 	for i < 3 {
@@ -561,7 +563,6 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 		}
 		i++
 	}
-	println("ALERTED SUCCESS")
 
 	return
 
@@ -642,6 +643,7 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 		clientConditional.L.Lock()
 		nodeConditional.L.Lock()
 
+		println(message.OnlineNumber)
 		LBServers[message.OnlineNumber].Status = "online"
 
 		reply.Clients = clientList
@@ -652,6 +654,8 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 	} else {
 		println("New LB is online: ", message.OnlineNumber)
 		LBServers[message.OnlineNumber].Status = "online"
+
+		println("Status of ",message.OnlineNumber," is ",LBServers[message.OnlineNumber].Status)
 	}
 
 	return nil
@@ -736,7 +740,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 			return nil
 		}
 
-		var clientReply ClientReply
+		var clientReply ServerReply
 		var rpcUpdateMessage ChatServer
 
 		//Dial and update the client with their server address
@@ -800,6 +804,7 @@ func printOutAllClients() {
 		fmt.Print((*toPrint).Username)
 		toPrint = (*toPrint).NextClient
 	}
+
 
 	return
 }
