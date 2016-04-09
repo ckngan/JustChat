@@ -64,7 +64,7 @@ type ClientMessage struct {
 type ClockedClientMsg struct {
 	ClientMsg ClientMessage
 	ServerId  string
-	Clock     uint64
+	Clock     int
 }
 
 type ClientRequest struct {
@@ -119,9 +119,9 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
-var thisClock uint64 // number of messages received from own clients
+var thisClock int // number of messages received from own clients
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
-var numMsgsRcvd int // # of messages this node has received
+var numMsgsRcvd int                 // # of messages this node has received
 
 //****************************BACK-END RPC METHODS***********************************//
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
@@ -969,7 +969,7 @@ func sendPublicFileClients(file FileData) {
 				//it's dead but the ping will eventually take care of it
 			} else {
 				var reply ServerReply
-				err = systemService.Call("ClientMessageService.SendPublicFile", file, &reply)
+				err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
 				checkError(err)
 				if err == nil {
 					fmt.Println("we received a reply from the server: ", reply.Message)
