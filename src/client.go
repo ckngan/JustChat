@@ -135,6 +135,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 		}
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
+			fmt.Print(NewRpcChatServer)
 			fmt.Print(editText("Error connecting to JustChat\n", 31, 1))
 			attempts++
 		} else {
@@ -147,7 +148,6 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
-
 	re := regexp.MustCompile(`\r?\n`)
 	messageOwner := editText(args.UserName, 33, 1)
 	messageBody := editText(args.Message, 32, 1)
@@ -256,7 +256,6 @@ func startupChatConnection() {
 	i := 0
 	for ; i < len(loadBalancers); i++ {
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
-
 		if err == nil {
 			Logger.LogLocalEvent("connected to a loadBalancer")
 			// Welcome
@@ -269,9 +268,16 @@ func startupChatConnection() {
 			break
 		}
 	}
+
 	if i == 3 {
 		os.Exit(-1)
 	}
+
+	// Welcome
+	fmt.Println()
+	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+	fmt.Println()
+
 	return
 }
 
@@ -458,6 +464,8 @@ func filterAndSendMessage(msg []string) {
 			sendPrivateFile(user, message)
 		} else if command == "message" {
 			sendPrivateMessage(user, message)
+		} else if command == "wow" {
+			fmt.Println("Hey")
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
