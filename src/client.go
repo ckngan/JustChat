@@ -60,11 +60,6 @@ type ServerReply struct {
 	Message string
 }
 
-//Retrun to client
-type ClientReply struct {
-	Message string
-}
-
 /* Global Variables */
 
 // RPC of chat server
@@ -104,7 +99,7 @@ var msgConditional *sync.Cond
 type ClientMessageService int
 
 // Method for a client to call another client to transfer file data
-func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply) error {
+func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
 
 	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
 	Logger.LogLocalEvent("received file transfer")
@@ -112,7 +107,7 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ClientReply
 }
 
 // Method to handle private rpc messages from clients
-func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ClientReply) error {
+func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
 	messageOwner := editText(args.UserName, 42, 1)
 	output := privateFlag + messageOwner
@@ -124,7 +119,7 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Clie
 }
 
 // Method the load balancer calls on the clients to update rpc addresses
-func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ClientReply) error {
+func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ServerReply) error {
 	NewRpcChatServer = args.ServerRpcAddress
 	reply.Message = ""
 	Logger.LogLocalEvent("rpc chat server updated")
@@ -149,7 +144,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Cl
 }
 
 // Method for server to call client to receive message
-func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ClientReply) error {
+func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
 	messageOwner := strings.Split(editText(args.UserName, 33, 1), "\n")[0]
 	messageBody := strings.Split(editText(args.Message, 32, 1), "\n")[0]
 	output := messageOwner + ": " + messageBody
@@ -162,7 +157,7 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Clie
 }
 
 // Method to handle private rpc messages from clients
-func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ClientReply) error {
+func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
 	messageOwner := editText(args.UserName, 42, 1)
 	messageBody := editText(args.Message, 33, 1)
@@ -417,7 +412,6 @@ func chat() {
 }
 
 // method to filter messages and then send
-// TODO:
 func filterAndSendMessage(msg []string) {
 
 	var reply ServerReply
@@ -425,28 +419,30 @@ func filterAndSendMessage(msg []string) {
 
 	command := msg[0]
 	if len(msg) == 1 {
+
 		sendMsg.Message = command
 		sendMsg.UserName = username
-		//consoleUsername := strings.Split(username, "\n")[0]
-		//messageChannel <- editText(consoleUsername, 44, 1) + ":" + command
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		checkError(err)
-		// do something with reply
-		// messageChannel <- reply.Message
 
 	} else if len(msg) == 3 {
+
 		command = strings.TrimSpace(msg[1])
+		file := strings.TrimSpace(msg[2])
+
 		if command == "share" {
-			sendPublicFile(strings.TrimSpace(msg[2]))
+			sendPublicFile(file)
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
 			return
 		}
 	} else if len(msg) == 4 {
+
 		command = strings.TrimSpace(msg[1])
 		user := strings.TrimSpace(msg[2])
 		message := strings.TrimSpace(msg[3])
+
 		if command == "share" {
 			sendPrivateFile(user, message)
 		} else if command == "message" {
@@ -461,6 +457,7 @@ func filterAndSendMessage(msg []string) {
 
 // method to send public file
 func sendPublicFile(filepath string) {
+
 	var reply ServerReply
 	var fileData FileData
 	fileData = packageFile(filepath)
@@ -490,7 +487,17 @@ func packageFile(filepath string) (fileData FileData) {
 }
 
 // method to send private file
+// func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply)
 func sendPrivateFile(user string, filepath string) {
+	var request ClientRequest
+	var reply ServerReply
+
+	request.UserName = username
+	request.RequestedUsername = user
+	request.RpcAddress = clientRpcAddress
+	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
+	checkError(err)
+	// reply should be IP port of the
 	return
 }
 
