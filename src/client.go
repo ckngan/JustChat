@@ -487,7 +487,7 @@ func sendPrivateFile(user string, filepath string) {
 	request.RequestedUsername = user
 	request.RpcAddress = clientRpcAddress
 	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
-
+	checkError(err)
 	// reply should be IP port of the
 	return
 }
