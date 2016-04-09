@@ -35,7 +35,7 @@ type ChatServer struct {
 	ServerRpcAddress string
 }
 
-// FileInfoData to build file structure in rpc call
+// FileData to build file structure in rpc call
 type FileData struct {
 	UserName string
 	FileName string
@@ -454,6 +454,16 @@ func filterAndSendMessage(msg []string) {
 func sendPublicFile(filepath string) {
 	var reply ServerReply
 	var fileData FileData
+	fileData = packageFile(filepath)
+
+	err := chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
+	checkError(err)
+
+	return
+}
+
+func packageFile(filepath string) (fileData FileData) {
+	//var fileData FileData
 	filepathArr := strings.Split(filepath, "/")
 	filename := filepathArr[len(filepathArr)-1]
 
@@ -465,13 +475,9 @@ func sendPublicFile(filepath string) {
 	fileData.FileSize = fis.Size()
 	fileData.FileName = filename
 	fileData.Data = make([]byte, fileData.FileSize)
-
 	_, _ = r.Read(fileData.Data)
-	err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
-	checkError(err)
 	r.Close()
-
-	return
+	return fileData
 }
 
 // method to send private file
