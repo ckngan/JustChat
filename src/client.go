@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -484,18 +485,18 @@ func sendPublicFile(filepath string) {
 	return
 }
 
-func packageFile(filepath string) (fileData FileData) {
+func packageFile(path string) (fileData FileData) {
 	//var fileData FileData
-	filepathArr := strings.Split(filepath, "/")
-	filename := filepathArr[len(filepathArr)-1]
 
-	r, err := os.Open(filepath)
+	_, file := filepath.Split(path)
+
+	r, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
 	fis, _ := r.Stat()
 	fileData.FileSize = fis.Size()
-	fileData.FileName = filename
+	fileData.FileName = file
 	fileData.Data = make([]byte, fileData.FileSize)
 	_, _ = r.Read(fileData.Data)
 	r.Close()
