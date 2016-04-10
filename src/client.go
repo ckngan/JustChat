@@ -131,7 +131,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 	Logger.LogLocalEvent("rpc chat server updated")
 
 	// make the rpc call to the server as it's updated
-	fmt.Print("Changing Chat Server")
+
 	attempts := 0
 	for {
 		if attempts > 5 {
