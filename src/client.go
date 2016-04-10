@@ -256,6 +256,7 @@ func joinLoadBalancerServer() {
 		// read user username and send to chat server
 		uname := getClientUsername()
 		pword := getClientPassword()
+		username = uname
 		message.Username = uname
 		message.Password = pword
 		message.RpcAddress = clientRpcAddress
@@ -269,7 +270,7 @@ func joinLoadBalancerServer() {
 		// Checking for welcome message
 		if serverMessage == "WELCOME" {
 			fmt.Println("\n\n", editText(welcome, Magenta, Intensity_1))
-			username = uname
+			//username = uname
 			initChatServerConnection()
 			break
 		} else {

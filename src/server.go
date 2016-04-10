@@ -239,7 +239,6 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 	addClient(message.Username, message.RPC_IPPORT)
 	println("New Size of client list: ", sizeOfClientList())
 	println("NewUser is: ", clientList.Username)
-	//TODO: STORE USER DATA
 
 	reply.Message = "success"
 	return nil
@@ -378,7 +377,7 @@ func main() {
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
-	ip := getIP()
+	ip := "localhost"//getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
@@ -927,10 +926,11 @@ func sendPublicMsgClients(message ClientMessage) {
 	clientListMutex.Unlock()
 	var wg sync.WaitGroup
 	wg.Add(size)
-
+	i:=0
 	for next != nil {
 		go func(next *ClientItem, message ClientMessage){
 			defer wg.Done()
+			println("Name of client we are looking at to send stuff to maybe : ", (*next).Username, " RPC: ", (*next).RPC_IPPORT)
 			if (*next).Username != message.Username {
 				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 				//checkError(err)
@@ -943,16 +943,20 @@ func sendPublicMsgClients(message ClientMessage) {
 				} else {
 					var reply ServerReply
 					// client api uses ClientMessageService
-					err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+					errr := systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
 					//checkError(err)
-					if err == nil {
-						fmt.Println("We sent a message to a client: ", reply.Message)
+					if errr == nil {
+						i = i + 1
+						fmt.Println("*********************************************We sent a message to a client: ", reply.Message, " ", i)
 					}else{
 					println("we tried sending a message to a client but got: ", err)
 					}
 					systemService.Close()
 				}
 
+			}else{
+				i = i + 1
+						fmt.Println("*********************************************We  didnt send a message to a client caus its the sender: ", i)
 			}
 		}(next, message)
 
