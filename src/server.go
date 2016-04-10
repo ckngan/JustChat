@@ -1077,3 +1077,51 @@ func checkBufFull() {
 		toHistoryBuf = nil
 	}
 }
+
+func writeHistoryToFile(toHistoryBuf []ClockedClientMsg){
+
+  _, err := os.Stat("../ChatHistory/ChatHistory.txt")
+
+  if os.IsNotExist(err) {
+
+ path := "./Users/"
+ err := os.MkdirAll(path, 0777)
+if err != nil {
+    println("YOURE DOING SOMETHING WRONfddgssG")
+}
+checkError(err)
+
+ f, er := os.Create("../ChatHistory/ChatHistory.txt")
+  if er != nil {
+    println("hyjklhjYOURE DOING SOMETHING WRONfddgssG")
+}
+checkError(er)
+f.Close()
+ }
+
+f, err := os.OpenFile("./Users/Users.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+if err != nil {
+    println("YOURE DOING SOMETHING WRONG")
+}
+defer f.Close()
+
+i:= 0
+for i < len(toHistoryBuf){
+    msg := toHistoryBuf[i]
+    uname := msg.ClientMsg.UserName
+    clientmes := msg.ClientMsg.Message
+    serverid := msg.ServerId
+    clock := msg.Clock
+    stringClock := strconv.Itoa(clock)
+
+    n, erro := f.WriteString(`{"Username" : "`+uname+`", "Message" : "`+clientmes+`", "ServerId" : "`+serverid+`", "clock" : "`+stringClock+`"}`)
+      if erro != nil {
+          println("YOURE DOING SOMETHING WRONG")
+      }else{
+          println("we wrote ", n , " bytes")
+      }
+ i = i + 1
+}
+
+return
+}
