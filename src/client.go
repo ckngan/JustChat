@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -356,7 +357,6 @@ func getClientPassword() string {
 
 		if err != nil {
 			fmt.Println("\nPassword typed: " + string(bytePassword))
-			// checkError(err)
 		}
 		fmt.Println()
 		inputPword := string(bytePassword)
@@ -479,30 +479,36 @@ func sendPublicFile(filepath string) {
 
 	var reply ServerReply
 	var fileData FileData
-	fileData = packageFile(filepath)
-
-	err := chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
-	checkError(err)
+	fileData, err := packageFile(filepath)
+	if err == nil {
+		err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
+		checkError(err)
+	} else {
+		messageChannel <- "Please check filepath"
+	}
 
 	return
 }
 
-func packageFile(filepath string) (fileData FileData) {
+func packageFile(path string) (fileData FileData, err error) {
 	//var fileData FileData
-	filepathArr := strings.Split(filepath, "/")
-	filename := filepathArr[len(filepathArr)-1]
 
-	r, err := os.Open(filepath)
+	_, file := filepath.Split(path)
+
+	r, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		var fileData FileData
+		var err error
+		return fileData, err
 	}
 	fis, _ := r.Stat()
 	fileData.FileSize = fis.Size()
-	fileData.FileName = filename
+	fileData.FileName = file
 	fileData.Data = make([]byte, fileData.FileSize)
 	_, _ = r.Read(fileData.Data)
 	r.Close()
-	return fileData
+	return fileData, nil
+
 }
 
 // method to send private file
@@ -537,7 +543,7 @@ func receiveFilePermission(filename string) bool {
 		if len(permit) > 0 {
 			if permit == "y" {
 				return true
-			} else if permit != "n" {
+			} else if permit == "n" {
 				return false
 			} else {
 				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1), " ")
@@ -554,17 +560,27 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 	if receiveFilePermission(filename) {
 		directory := getDownloadDirectory()
 		// creating file to be written to
-		newFile, err := os.Create(directory + "/" + filename)
-		checkError(err)
+		newFile, err := os.Create(directory + filename)
+		if err == nil {
 
-		// writing file received from rpc
-		n, err := newFile.Write(filedata)
-		checkError(err)
-		fmt.Println()
-		output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
-		messageChannel <- output
-		msgConditional.Signal()
-		return "Received"
+			// writing file received from rpc
+			n, err := newFile.Write(filedata)
+			if err != nil {
+				messageChannel <- "Error: Cannot write file"
+				msgConditional.Signal()
+				return "Decline"
+			}
+			fmt.Println()
+			output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
+			messageChannel <- output
+			msgConditional.Signal()
+			return "Received"
+		} else {
+			messageChannel <- "Error: Check filepath"
+			msgConditional.Signal()
+			return "Decline"
+		}
+
 	} else {
 		return "Decline"
 	}
