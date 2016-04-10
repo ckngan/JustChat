@@ -139,9 +139,9 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 	fmt.Printf("new msg from other server: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 	//toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
-	clientListMutex.Lock()
+
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
-	clientListMutex.Unlock()
+
 
 	checkBufFull()
 
@@ -157,9 +157,9 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 		FileName: args.FileName,
 		FileSize: args.FileSize,
 		Data:     args.Data}
-	clientListMutex.Lock()
+
 	sendPublicFileClients(file)
-	clientListMutex.Unlock()
+
 	reply.Message = "success"
 	return nil
 }
@@ -257,16 +257,22 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 	numMsgsRcvd++
 	fmt.Printf("new client msg: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 
-	serverListMutex.Lock()
-	go sendPublicMsgServers(message)
-	serverListMutex.Unlock()
-	clientListMutex.Lock()
-	go sendPublicMsgClients(message)
-	clientListMutex.Unlock()
+	var hinder sync.WaitGroup
+	hinder.Add(2)
+	go func(){
+		defer hinder.Done()
+		sendPublicMsgServers(message)
+		println("after go routine 1")
+	}()
+	go func(){
+		defer hinder.Done()
+		sendPublicMsgClients(message)
+		println("after go routine 2")
+	}()
 
 	checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
-
-	//TODO:send to k other servers to STORE
+	hinder.Wait()
+	println("Bakc from sending messages before sending success to sender")
 	reply.Message = "success"
 	return nil
 }
@@ -281,14 +287,18 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 		FileName: args.FileName,
 		FileSize: args.FileSize,
 		Data:     args.Data}
-	storeFile(file)
 
-	serverListMutex.Lock()
-	sendPublicFileServers(file)
-	serverListMutex.Unlock()
-	clientListMutex.Lock()
-	sendPublicFileClients(file)
-	clientListMutex.Unlock()
+	var hinder sync.WaitGroup
+	hinder.Add(2)
+	go func(){
+		defer hinder.Done()
+		sendPublicFileServers(file)
+	}()
+	go func(){
+		defer hinder.Done()
+		sendPublicFileClients(file)
+	}()
+
 	/*
 		//store in k-1 other servers and keep track
 		storeFile := StoreFileData{
@@ -299,6 +309,9 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 			Data     : args.Data}
 		kStores(storeFile)
 	*/
+	storeFile(file)
+
+	hinder.Wait()
 	reply.Message = "success"
 	return nil
 }
@@ -364,7 +377,7 @@ func main() {
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
-	ip := getIP()
+	ip := "localhost"//getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
@@ -567,7 +580,7 @@ func initPingServers(LocalAddr *net.UDPAddr) {
 		}
 
 		println("Starting timer")
-		timer1 := time.NewTimer(time.Second * 1)
+		timer1 := time.NewTimer(time.Second * 15)
 		<-timer1.C
 		println("Timer's up")
 	}
@@ -858,7 +871,13 @@ func isActive(rpc string)(bool){
 */
 
 func sendPublicMsgServers(message ClientMessage) {
+
+	serverListMutex.Lock()
 	next := serverList
+	size := sizeOfServerList()
+	serverListMutex.Unlock()
+	var wg sync.WaitGroup
+	wg.Add(size)
 
 	clockedMsg := ClockedClientMsg{
 		ClientMsg: message,
@@ -868,6 +887,8 @@ func sendPublicMsgServers(message ClientMessage) {
 	//toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
 	for next != nil {
+		go func(next *ServerItem, clockedMsg ClockedClientMsg){
+			defer wg.Done()
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 			//checkError(err)
@@ -879,43 +900,64 @@ func sendPublicMsgServers(message ClientMessage) {
 				err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
 				//checkError(err)
 				if err == nil {
-					fmt.Println("we received a reply from the server: ", reply.Message)
+					fmt.Println("we sent a message to a server: ", reply.Message)
 				} else {
 					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error call.")
 				}
 				systemService.Close()
 			}
 		}
+
+		}(next, clockedMsg)
 		next = (*next).NextServer
 	}
+
+	wg.Wait()
+	return
 }
 
 func sendPublicMsgClients(message ClientMessage) {
+	println("inside sendPublicMsgClients")
+	clientListMutex.Lock()
 	next := clientList
+	size := sizeOfClientList()
+	clientListMutex.Unlock()
+	var wg sync.WaitGroup
+	wg.Add(size)
 
 	for next != nil {
-
-		if (*next).Username != message.Username {
-			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
-				//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
-				deleteClientFromList((*next).Username)
-			} else {
-				var reply ServerReply
-				// client api uses ClientMessageService
-				err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
-				checkError(err)
-				if err == nil {
-					fmt.Println("we received a reply from the server: ", reply.Message)
+		go func(next *ClientItem, message ClientMessage){
+			defer wg.Done()
+			if (*next).Username != message.Username {
+				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+				//checkError(err)
+				if err != nil {
+					println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
+					//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
+					clientListMutex.Lock()
+					deleteClientFromList((*next).Username)
+					clientListMutex.Unlock()
+				} else {
+					var reply ServerReply
+					// client api uses ClientMessageService
+					err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+					//checkError(err)
+					if err == nil {
+						fmt.Println("We sent a message to a client: ", reply.Message)
+					}else{
+					println("we tried sending a message to a client but got: ", err)
+					}
+					systemService.Close()
 				}
-				systemService.Close()
-			}
 
-		}
+			}
+		}(next, message)
+
 		next = (*next).NextClient
 	}
+	wg.Wait()
+	println("AFTER WAIT")
+	return
 }
 
 func storeFile(file FileData) {
@@ -933,9 +975,17 @@ func storeFile(file FileData) {
 }
 
 func sendPublicFileServers(file FileData) {
+	serverListMutex.Lock()
 	next := serverList
+	size := sizeOfServerList()
+	serverListMutex.Unlock()
+	var wg sync.WaitGroup
+
+	wg.Add(size)
 
 	for next != nil {
+		go func(next *ServerItem, file FileData){
+		defer wg.Done()
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
@@ -948,37 +998,56 @@ func sendPublicFileServers(file FileData) {
 				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
 				checkError(err)
 				if err == nil {
-					fmt.Println("we received a reply from the server: ", reply.Message)
+					fmt.Println("sent file to server: ", reply.Message)
 				}
 				systemService.Close()
 			}
 		}
+		}(next, file)
 		next = (*next).NextServer
 	}
+	wg.Wait()
+	return
 }
 
 func sendPublicFileClients(file FileData) {
+	clientListMutex.Lock()
 	next := clientList
+	size := sizeOfClientList()
+	clientListMutex.Unlock()
+	var wg sync.WaitGroup
+	wg.Add(size)
+
 
 	for next != nil {
+		go func(next *ClientItem, file FileData){
+		defer wg.Done()
 		if (*next).Username != file.Username {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 			//checkError(err)
 			if err != nil {
 				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
-				//it's dead but the ping will eventually take care of it
+				//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
+					clientListMutex.Lock()
+					deleteClientFromList((*next).Username)
+					clientListMutex.Unlock()
 			} else {
 				var reply ServerReply
 				err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
 				checkError(err)
 				if err == nil {
-					fmt.Println("we received a reply from the server: ", reply.Message)
+					fmt.Println("sent file to client: ", reply.Message)
 				}
 				systemService.Close()
 			}
 		}
+		}(next, file)
+
 		next = (*next).NextClient
 	}
+
+	wg.Wait()
+	return
 }
 
 func kStores(file StoreFileData) {
