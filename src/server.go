@@ -136,7 +136,7 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 		Clock:     args.Clock}
 
 	numMsgsRcvd++
-	fmt.Println("new msg from other server: Clock=%d, Msgs Rcvd=%d", thisClock, numMsgsRcvd)
+	fmt.Printf("new msg from other server: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 	//toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
 	clientListMutex.Lock()
@@ -255,7 +255,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	thisClock++
 	numMsgsRcvd++
-	fmt.Println("new client msg: Clock=%d, Msgs Rcvd=%d", thisClock, numMsgsRcvd)
+	fmt.Printf("new client msg: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 
 	serverListMutex.Lock()
 	go sendPublicMsgServers(message)
@@ -877,9 +877,11 @@ func sendPublicMsgServers(message ClientMessage) {
 			} else {
 				var reply ServerReply
 				err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
-				checkError(err)
+				//checkError(err)
 				if err == nil {
 					fmt.Println("we received a reply from the server: ", reply.Message)
+				} else {
+					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error call.")
 				}
 				systemService.Close()
 			}
@@ -935,6 +937,7 @@ func sendPublicFileServers(file FileData) {
 
 	for next != nil {
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 			//checkError(err)
 			if err != nil {
@@ -1081,7 +1084,7 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 	if os.IsNotExist(err) {
 
 		path := "../ChatHistory/"
-		err := os.MkdirAll(path, 0777)
+		err = os.MkdirAll(path, 0777)
 		if err != nil {
 			println("YOURE DOING SOMETHING WRONfddgssG")
 		}

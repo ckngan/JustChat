@@ -114,11 +114,10 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
 	messageOwner := editText(args.Username, 42, 1)
-	output := privateFlag + messageOwner
-	fmt.Println(output)
-	handleFileTransfer(args.FileName, args.Username, args.Data)
-
-	reply.Message = ""
+	output := removeNewLine(privateFlag + messageOwner)
+	//fmt.Println(output)
+	messageChannel <- output
+	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
 	return nil
 }
 
@@ -147,17 +146,15 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 			break
 		}
 	}
-
 	sendCond.Signal()
 	return nil
 }
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
-	re := regexp.MustCompile(`\r?\n`)
 	messageOwner := editText(args.Username, 33, 1)
 	messageBody := editText(args.Message, 32, 1)
-	output := re.ReplaceAllString(messageOwner+": "+messageBody, "")
+	output := removeNewLine(messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
 	Logger.LogLocalEvent("client received global message")
@@ -169,14 +166,13 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
-	messageOwner := editText(args.Username, 42, 1)
+	messageOwner := editText(args.Username, 32, 1)
 	messageBody := editText(args.Message, 33, 1)
-	output := privateFlag + messageOwner + ": " + messageBody
+	output := removeNewLine(privateFlag + messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
 	Logger.LogLocalEvent("client received private message")
-
-	reply.Message = ""
+	reply.Message = "Received"
 	return nil
 }
 
@@ -342,7 +338,6 @@ func getClientUsername() string {
 	for {
 		fmt.Print(editText("Please enter your username:", 44, 1), " ")
 		inputUsername, _ := reader.ReadString('\n')
-		//uname = strings.TrimSpace(inputUsername)
 		uname = inputUsername
 
 		if len(uname) > 0 {
@@ -351,7 +346,7 @@ func getClientUsername() string {
 			fmt.Println(editText("Must enter 1 or more characters\n", 31, 1))
 		}
 	}
-	return uname
+	return removeNewLine(uname)
 }
 
 // Method to get client's username
@@ -382,20 +377,20 @@ func getClientPassword() string {
 // method also checks if directory exists
 func getDownloadDirectory() string {
 	// Reading input from user for download
-	filename := ""
-	command := "Please enter download directory to receive file:"
+	filepath := ""
+	command := "Please enter download directory to receive file: "
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText(command, 44, 1), " ")
+		fmt.Print(editText(command, 44, 1))
 		inputMsg, _ := reader.ReadString('\n')
-		filename = inputMsg
-		if len(filename) > 0 {
+		filepath = inputMsg
+		if len(filepath) > 0 {
 			break
 		} else {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
-	return filename
+	return removeNewLine(filepath)
 }
 
 // Method to get message from client's console
@@ -415,7 +410,7 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
 		}
 	}
-	return message
+	return removeNewLine(message)
 }
 
 // Method to handle all chat input from client
@@ -541,12 +536,68 @@ func sendPrivateFile(user string, filepath string) {
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
 	sendCond.L.Unlock()
+
+	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
+	if err != nil {
+		messageChannel <- "Seems like " + user + " is not accepting connections. Please try again!."
+		msgConditional.Signal()
+		return
+	} else {
+		var reply ServerReply
+		fileData, err := packageFile(filepath)
+		if err != nil {
+			messageChannel <- "Error packaging file to send privately. Please try again!"
+			msgConditional.Signal()
+			return
+		}
+		err = privateClient.Call("ClientMessageService.TransferFilePrivate", fileData, &reply)
+		if err != nil {
+			messageChannel <- "Error transfering file to " + user + ". Please try again!"
+			msgConditional.Signal()
+			return
+		}
+		messageChannel <- editText(user, 33, 1) + " " + reply.Message + " your file transfer."
+		msgConditional.Signal()
+	}
 	// reply should be IP port of the
 	return
 }
 
 // method to send private message
 func sendPrivateMessage(user string, message string) {
+	var request ClientRequest
+	var reply ClientInfo
+
+	request.Username = user
+	sendCond.L.Lock()
+	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
+	for err != nil {
+		sendCond.Wait()
+		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
+	}
+	sendCond.L.Unlock()
+
+	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
+	if err != nil {
+		messageChannel <- "Seems like " + user + " is not accepting connections. Please try again!."
+		msgConditional.Signal()
+		return
+	} else {
+		var reply ServerReply
+		var clientMessage ClientMessage
+		clientMessage.Username = username
+		clientMessage.Message = message
+
+		err = privateClient.Call("ClientMessageService.ReceivePrivateMessage", clientMessage, &reply)
+		if err != nil {
+			messageChannel <- "Error sending private message to " + user + ". Please try again!"
+			msgConditional.Signal()
+			return
+		}
+		messageChannel <- editText(user, 33, 1) + " " + reply.Message + " your private message."
+		msgConditional.Signal()
+	}
+	// reply should be IP port of the
 	return
 }
 
@@ -555,17 +606,16 @@ func receiveFilePermission(filename string) bool {
 	// Reading input from user for username
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", 44, 1), " ")
+		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", 44, 1))
 		permitInput, _ := reader.ReadString('\n')
-		//uname = strings.TrimSpace(inputUsername)
-		permit := strings.TrimSpace(strings.ToLower(permitInput))
+		permit := removeNewLine(strings.TrimSpace(strings.ToLower(permitInput)))
 		if len(permit) > 0 {
 			if permit == "y" {
 				return true
 			} else if permit == "n" {
 				return false
 			} else {
-				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1), " ")
+				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1))
 			}
 		} else {
 			fmt.Println(editText("Must enter 1 or more characters\n", 31, 1))
@@ -589,21 +639,20 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 			if err != nil {
 				messageChannel <- "Error: Cannot write file"
 				msgConditional.Signal()
-				return "Decline"
+				return "Declined"
 			}
 			fmt.Println()
-			output := "Receive file " + filename + " with size " + strconv.Itoa(n) + " bytes from " + user + "."
+			output := "Receive file " + editText(filename, 33, 1) + " with size " + strconv.Itoa(n) + " bytes from " + editText(user, 33, 1) + "."
 			messageChannel <- output
 			msgConditional.Signal()
 			return "Received"
 		} else {
 			messageChannel <- "Error: Check filepath"
 			msgConditional.Signal()
-			return "Decline"
+			return "Declined"
 		}
-
 	} else {
-		return "Decline"
+		return "Declined"
 	}
 }
 
@@ -670,6 +719,12 @@ func getIP() (ip string) {
 func disconnectClient() {
 	// Can be a bit more verbose
 	os.Exit(-1)
+}
+
+func removeNewLine(value string) (str string) {
+	re := regexp.MustCompile(`\r?\n`)
+	str = re.ReplaceAllString(value, "")
+	return
 }
 
 /* Function to edit output text color
