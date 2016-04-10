@@ -479,22 +479,27 @@ func sendPublicFile(filepath string) {
 
 	var reply ServerReply
 	var fileData FileData
-	fileData = packageFile(filepath)
-
-	err := chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
-	checkError(err)
+	fileData, err := packageFile(filepath)
+	if err == nil {
+		err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
+		checkError(err)
+	} else {
+		messageChannel <- "Please check filepath"
+	}
 
 	return
 }
 
-func packageFile(path string) (fileData FileData) {
+func packageFile(path string) (fileData FileData, err error) {
 	//var fileData FileData
 
 	_, file := filepath.Split(path)
 
 	r, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		var fileData FileData
+		var err error
+		return fileData, err
 	}
 	fis, _ := r.Stat()
 	fileData.FileSize = fis.Size()
@@ -502,7 +507,8 @@ func packageFile(path string) (fileData FileData) {
 	fileData.Data = make([]byte, fileData.FileSize)
 	_, _ = r.Read(fileData.Data)
 	r.Close()
-	return fileData
+	return fileData, nil
+
 }
 
 // method to send private file
