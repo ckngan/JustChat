@@ -135,12 +135,13 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
-	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", Yellow, Intensity_1)
-	messageOwner := editText(args.Username, Green_B, Intensity_1)
+	privateFlag := editText("PRIVATE FILE "+args.FileName+" FROM => ", Yellow, Intensity_1)
+	messageOwner := editText(args.Username, Green, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner)
-	//fmt.Println(output)
+	fmt.Println(output)
 	messageChannel <- output
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
+	Logger.LogLocalEvent("received file transfer")
 	return nil
 }
 
@@ -305,6 +306,7 @@ func getClientUsername() string {
 			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
 		}
 	}
+	reader.Reset(os.Stdin)
 	return removeNewLine(uname)
 }
 
@@ -337,10 +339,10 @@ func getClientPassword() string {
 func getDownloadDirectory() string {
 	// Reading input from user for download
 	filepath := ""
-	command := "Please enter download directory to receive file: "
+	command := "Please enter download directory to receive file:"
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText(command, Blue_B, Intensity_1))
+		fmt.Print(editText(command, Blue_B, Intensity_1), " ")
 		inputMsg, _ := reader.ReadString('\n')
 		filepath = inputMsg
 		if len(filepath) > 0 {
@@ -349,6 +351,7 @@ func getDownloadDirectory() string {
 			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
+	reader.Reset(os.Stdin)
 	return removeNewLine(filepath)
 }
 
@@ -369,6 +372,7 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
+	reader.Reset(os.Stdin)
 	return removeNewLine(message)
 }
 
@@ -377,9 +381,8 @@ func chat() {
 	// method to receive messages from channel
 	go flushToConsole()
 	for {
-		// This can be placed in the location when the loadbalancer updates the NewRpcChatServer
-		message := getMessage()
-		messageArr := strings.Split(message, "#")
+		inputMessage := getMessage()
+		messageArr := strings.Split(inputMessage, "#")
 		filterAndSendMessage(messageArr)
 	}
 }
@@ -472,6 +475,7 @@ func packageFile(path string) (fileData FileData, err error) {
 		return fileData, err
 	}
 	fis, _ := r.Stat()
+	fileData.Username = username
 	fileData.FileSize = fis.Size()
 	fileData.FileName = file
 	fileData.Data = make([]byte, fileData.FileSize)
@@ -494,7 +498,6 @@ func sendPrivateFile(user string, filepath string) {
 		sendCond.Wait()
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
-	sendCond.L.Unlock()
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -518,6 +521,7 @@ func sendPrivateFile(user string, filepath string) {
 		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your file transfer."
 		msgConditional.Signal()
 	}
+	sendCond.L.Unlock()
 	// reply should be IP port of the
 	return
 }
@@ -565,14 +569,19 @@ func receiveFilePermission(filename string) bool {
 	// Reading input from user for username
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", Blue_B, Intensity_1))
+		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)?", Blue_B, Intensity_1), " ")
 		permitInput, _ := reader.ReadString('\n')
 		permit := removeNewLine(strings.TrimSpace(strings.ToLower(permitInput)))
+		fmt.Println(permit)
 		if len(permit) > 0 {
 			if permit == "y" {
+				reader.Reset(os.Stdin)
 				return true
+
 			} else if permit == "n" {
+				reader.Reset(os.Stdin)
 				return false
+
 			} else {
 				fmt.Println(editText("Invalid command, please use (y/n)\n", Red, Intensity_1))
 			}
