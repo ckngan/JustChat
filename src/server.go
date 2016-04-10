@@ -377,7 +377,7 @@ func main() {
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
-	ip := "localhost"//getIP()
+	ip := getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
