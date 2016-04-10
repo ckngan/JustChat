@@ -19,6 +19,27 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+const (
+	Intensity_1 = 1
+	Intensity_2 = 2
+	Black       = 30
+	Red         = 31
+	Green       = 32
+	Yellow      = 33
+	Blue        = 34
+	Magenta     = 35
+	Cyan        = 36
+	White       = 37
+	Black_B     = 40
+	Red_B       = 41
+	Green_B     = 42
+	Yellow_B    = 43
+	Blue_B      = 44
+	Magenta_B   = 45
+	Cyan_B      = 46
+	White_B     = 47
+)
+
 // Message Format from client
 type ClientMessage struct {
 	Username string
@@ -97,6 +118,8 @@ var msgConditional *sync.Cond
 
 var sendMutex sync.Mutex
 var sendCond *sync.Cond
+var signup string
+var welcome string
 
 //========================== Client RPC Service ======================== //
 //RPC Value for receiving messages
@@ -112,8 +135,8 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
-	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
-	messageOwner := editText(args.Username, 42, 1)
+	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", Yellow, Intensity_1)
+	messageOwner := editText(args.Username, Green_B, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner)
 	//fmt.Println(output)
 	messageChannel <- output
@@ -128,7 +151,6 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 	Logger.LogLocalEvent("rpc chat server updated")
 
 	// make the rpc call to the server as it's updated
-
 	attempts := 0
 	for {
 		if attempts > 5 {
@@ -138,7 +160,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
 			fmt.Print(NewRpcChatServer)
-			fmt.Print(editText("Error connecting to JustChat\n", 31, 1))
+			fmt.Print(editText("Error connecting to JustChat\n", Red, Intensity_1))
 			attempts++
 		} else {
 			chatServer = chatConn
@@ -152,8 +174,8 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
-	messageOwner := editText(args.Username, 33, 1)
-	messageBody := editText(args.Message, 32, 1)
+	messageOwner := editText(args.Username, Yellow, Intensity_1)
+	messageBody := editText(args.Message, Green, Intensity_1)
 	output := removeNewLine(messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
@@ -165,9 +187,9 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
-	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
-	messageOwner := editText(args.Username, 32, 1)
-	messageBody := editText(args.Message, 33, 1)
+	privateFlag := editText("PRIVATE MESSAGE FROM => ", Yellow, Intensity_1)
+	messageOwner := editText(args.Username, Green, Intensity_1)
+	messageBody := editText(args.Message, Yellow, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
@@ -176,69 +198,7 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 	return nil
 }
 
-// Main method to setup for client
-func main() {
-	if len(os.Args) != 4 {
-		fmt.Fprintf(os.Stderr,
-			"Usage: %s [ip:port1 ip:port2 ip:port3]\n",
-			os.Args[0])
-		os.Exit(1)
-	}
-
-	loadBalancer1 := os.Args[1]
-	loadBalancer2 := os.Args[2]
-	loadBalancer3 := os.Args[3]
-	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
-
-	msgMutex = sync.Mutex{}
-	msgConditional = sync.NewCond(&msgMutex)
-
-	sendMutex = sync.Mutex{}
-	sendCond = sync.NewCond(&sendMutex)
-
-	// allocate messageChannel for global access
-	messageChannel = make(chan string, bufferMax)
-
-	// Registering RPC service for client's server
-	clientService := new(ClientMessageService)
-	rpc.Register(clientService)
-
-	ip := getIP()
-	// listen on first open port server finds
-	clientServer, err := net.Listen("tcp", ip+":0")
-	if err != nil {
-		fmt.Println("Client Server Error:", err)
-		return
-	}
-
-	// Do something to advertise global rpc address
-	clientRpcAddress = clientServer.Addr().String()
-
-	fmt.Println("Client IP:Port --> ", clientRpcAddress)
-
-	// Create log
-	Logger = govec.InitializeMutipleExecutions("client "+clientRpcAddress, "sys")
-	Logger.LogThis("Client was initialized", "client "+clientRpcAddress, "{\"client "+clientRpcAddress+"\":1}")
-
-	// go routine to start rpc connection for client
-	go func() {
-		for {
-			// Accept connection from incoming clients/servers
-			conn, err := clientServer.Accept()
-			if err != nil {
-				log.Fatal("Connection error:", err)
-			}
-			go rpc.ServeConn(conn)
-			Logger.LogLocalEvent("rpc connection started")
-			// Accept call from loadbalancer/server/client
-		}
-	}()
-
-	clientSetup()
-
-	clientServer.Close()
-	os.Exit(0)
-}
+// ========================== Helper Methods ============================ //
 
 /* Method to initiate client setup */
 func clientSetup() {
@@ -265,7 +225,7 @@ func startupChatConnection() {
 			Logger.LogLocalEvent("connected to a loadBalancer")
 			// Welcome
 			fmt.Println()
-			fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+			fmt.Println(editText(signup, Yellow, Intensity_1))
 			fmt.Println()
 			// initializing rpc load balancer
 			loadBalancer = conn
@@ -280,7 +240,7 @@ func startupChatConnection() {
 
 	// Welcome
 	fmt.Println()
-	fmt.Println(editText("<----------------------- JustChat Signup ----------------------->", 33, 1))
+	fmt.Println(editText(signup, Yellow, Intensity_1))
 	fmt.Println()
 
 	return
@@ -307,13 +267,12 @@ func joinLoadBalancerServer() {
 
 		// Checking for welcome message
 		if serverMessage == "WELCOME" {
-			fmt.Println("\n\n", editText("<--------------------- Welcome to"+
-				" JustChat --------------------->", 35, 1))
+			fmt.Println("\n\n", editText(welcome, Magenta, Intensity_1))
 			username = uname
 			initChatServerConnection()
 			break
 		} else {
-			fmt.Println(editText("Username name already taken\n", 31, 1))
+			fmt.Println(editText("Username name already taken\n", Red, Intensity_1))
 		}
 	}
 }
@@ -336,14 +295,14 @@ func getClientUsername() string {
 	uname := ""
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText("Please enter your username:", 44, 1), " ")
+		fmt.Print(editText("Please enter your username:", Blue_B, Intensity_1), " ")
 		inputUsername, _ := reader.ReadString('\n')
 		uname = inputUsername
 
 		if len(uname) > 0 {
 			break
 		} else {
-			fmt.Println(editText("Must enter 1 or more characters\n", 31, 1))
+			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
 		}
 	}
 	return removeNewLine(uname)
@@ -355,7 +314,7 @@ func getClientPassword() string {
 	// Reading input from user for username
 	pword := ""
 	for {
-		fmt.Print(editText("Please enter your password:", 44, 1), " ")
+		fmt.Print(editText("Please enter your password:", Blue_B, Intensity_1), " ")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 
 		if err != nil {
@@ -367,7 +326,7 @@ func getClientPassword() string {
 		if len(pword) > 3 {
 			break
 		} else {
-			fmt.Println(editText("Must enter 3 or more characters\n", 31, 1))
+			fmt.Println(editText("Must enter 3 or more characters\n", Red, Intensity_1))
 		}
 	}
 	return pword
@@ -381,13 +340,13 @@ func getDownloadDirectory() string {
 	command := "Please enter download directory to receive file: "
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText(command, 44, 1))
+		fmt.Print(editText(command, Blue_B, Intensity_1))
 		inputMsg, _ := reader.ReadString('\n')
 		filepath = inputMsg
 		if len(filepath) > 0 {
 			break
 		} else {
-			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
+			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
 	return removeNewLine(filepath)
@@ -401,13 +360,13 @@ func getMessage() string {
 	//consoleUsername := strings.Split(username, "\n")[0]
 
 	for {
-		//fmt.Print(editText(consoleUsername, 44, 1), ":")
+		//fmt.Print(editText(consoleUsername, Blue_B, Intensity_1), ":")
 		inputMsg, _ := reader.ReadString('\n')
 		message = inputMsg
 		if len(message) > 0 {
 			break
 		} else {
-			fmt.Println(editText("Must enter 1 or more characters", 31, 1))
+			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
 	return removeNewLine(message)
@@ -556,7 +515,7 @@ func sendPrivateFile(user string, filepath string) {
 			msgConditional.Signal()
 			return
 		}
-		messageChannel <- editText(user, 33, 1) + " " + reply.Message + " your file transfer."
+		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your file transfer."
 		msgConditional.Signal()
 	}
 	// reply should be IP port of the
@@ -594,7 +553,7 @@ func sendPrivateMessage(user string, message string) {
 			msgConditional.Signal()
 			return
 		}
-		messageChannel <- editText(user, 33, 1) + " " + reply.Message + " your private message."
+		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your private message."
 		msgConditional.Signal()
 	}
 	// reply should be IP port of the
@@ -606,7 +565,7 @@ func receiveFilePermission(filename string) bool {
 	// Reading input from user for username
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", 44, 1))
+		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)? ", Blue_B, Intensity_1))
 		permitInput, _ := reader.ReadString('\n')
 		permit := removeNewLine(strings.TrimSpace(strings.ToLower(permitInput)))
 		if len(permit) > 0 {
@@ -615,10 +574,10 @@ func receiveFilePermission(filename string) bool {
 			} else if permit == "n" {
 				return false
 			} else {
-				fmt.Println(editText("Invalid command, please use (y/n)\n", 44, 1))
+				fmt.Println(editText("Invalid command, please use (y/n)\n", Red, Intensity_1))
 			}
 		} else {
-			fmt.Println(editText("Must enter 1 or more characters\n", 31, 1))
+			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
 		}
 	}
 }
@@ -642,7 +601,7 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 				return "Declined"
 			}
 			fmt.Println()
-			output := "Receive file " + editText(filename, 33, 1) + " with size " + strconv.Itoa(n) + " bytes from " + editText(user, 33, 1) + "."
+			output := "Receive file " + editText(filename, Yellow, Intensity_1) + " with size " + strconv.Itoa(n) + " bytes from " + editText(user, Yellow, Intensity_1) + "."
 			messageChannel <- output
 			msgConditional.Signal()
 			return "Received"
@@ -673,34 +632,36 @@ func flushToConsole() {
 // method to print the commands users can use
 func messageCommands() {
 
-	color1 := 41
-	color2 := 33
+	color1 := Red_B
+	color2 := Yellow
 
 	// 3 strings (message in first)
-	privateMessage1 := editText("Private Message", color1, 1)
-	message1 := editText("#message #username #some_message", color2, 2)
+	privateMessage1 := editText("Private Message", color1, Intensity_1)
+	message1 := editText("#message #username #some_message", color2, Intensity_2)
 
 	// 3 strings (share in first)
-	privateMessage2 := editText("Private File", color1, 1)
-	message2 := editText("#share #username #/path/to/file/name", color2, 2)
+	privateMessage2 := editText("Private File", color1, Intensity_1)
+	message2 := editText("#share #username #/path/to/file/name", color2, Intensity_2)
 
 	// 2 strings (share in first)
-	publicMessage1 := editText("Public File", color1, 1)
-	message3 := editText("#share #/path/to/file/name", color2, 2)
+	publicMessage1 := editText("Public File", color1, Intensity_1)
+	message3 := editText("#share #/path/to/file/name", color2, Intensity_2)
 
 	// 1 string (share in first)
-	commands := editText("Commands", color1, 1)
-	message4 := editText("#commands", color2, 2)
+	commands := editText("Commands", color1, Intensity_1)
+	message4 := editText("#commands", color2, Intensity_2)
 
-	fmt.Printf(editText("<----------------------- JustChat Commands ----------------------->\n", color2, 1))
+	fmt.Printf(editText("<----------------------- JustChat Commands ----------------------->\n", color2, Intensity_1))
 	fmt.Printf("%s ==> %2s\n", privateMessage1, message1)
 	fmt.Printf("   %s ==> %2s\n", privateMessage2, message2)
 	fmt.Printf("    %s ==> %2s\n", publicMessage1, message3)
 	fmt.Printf("       %s ==> %2s\n", commands, message4)
-	fmt.Printf(editText("<----------------------------------------------------------------->\n\n", color2, 1))
-	fmt.Printf(editText("<--------------------------Start Chatting------------------------->\n", 35, 1))
+	fmt.Printf(editText("<----------------------------------------------------------------->\n\n", color2, Intensity_1))
+	fmt.Printf(editText("<--------------------------Start Chatting------------------------->\n", Magenta, Intensity_1))
 
 }
+
+// ========================== Utility Methods ============================ //
 
 // get ip address of the host for client's server
 func getIP() (ip string) {
@@ -738,7 +699,6 @@ func removeNewLine(value string) (str string) {
 *			3/46	Cyan
 *			3/47	White
 */
-
 func editText(text string, color int, intensity int) string {
 	return "\x1b[" + strconv.Itoa(color) + ";" +
 		strconv.Itoa(intensity) + "m" +
@@ -751,4 +711,69 @@ func checkError(err error) {
 		log.Fatal(os.Stderr, "Error ", err.Error())
 		os.Exit(1)
 	}
+}
+
+// ========================== Main Method ============================ //
+func main() {
+	if len(os.Args) != 4 {
+		fmt.Fprintf(os.Stderr,
+			"Usage: %s [ip:port1 ip:port2 ip:port3]\n",
+			os.Args[0])
+		os.Exit(1)
+	}
+
+	loadBalancer1 := os.Args[1]
+	loadBalancer2 := os.Args[2]
+	loadBalancer3 := os.Args[3]
+	loadBalancers = []string{loadBalancer1, loadBalancer2, loadBalancer3}
+
+	msgMutex = sync.Mutex{}
+	msgConditional = sync.NewCond(&msgMutex)
+
+	sendMutex = sync.Mutex{}
+	sendCond = sync.NewCond(&sendMutex)
+
+	// allocate messageChannel for global access
+	messageChannel = make(chan string, bufferMax)
+	signup = "<----------------------- JustChat Signup ----------------------->"
+	welcome = "<--------------------- Welcome to JustChat --------------------->"
+	// Registering RPC service for client's server
+	clientService := new(ClientMessageService)
+	rpc.Register(clientService)
+
+	ip := getIP()
+	// listen on first open port server finds
+	clientServer, err := net.Listen("tcp", ip+":0")
+	if err != nil {
+		fmt.Println("Client Server Error:", err)
+		return
+	}
+
+	// Do something to advertise global rpc address
+	clientRpcAddress = clientServer.Addr().String()
+
+	fmt.Println("Client IP:Port --> ", clientRpcAddress)
+
+	// Create log
+	Logger = govec.InitializeMutipleExecutions("client "+clientRpcAddress, "sys")
+	Logger.LogThis("Client was initialized", "client "+clientRpcAddress, "{\"client "+clientRpcAddress+"\":1}")
+
+	// go routine to start rpc connection for client
+	go func() {
+		for {
+			// Accept connection from incoming clients/servers
+			conn, err := clientServer.Accept()
+			if err != nil {
+				log.Fatal("Connection error:", err)
+			}
+			go rpc.ServeConn(conn)
+			Logger.LogLocalEvent("rpc connection started")
+			// Accept call from loadbalancer/server/client
+		}
+	}()
+
+	clientSetup()
+
+	clientServer.Close()
+	os.Exit(0)
 }
