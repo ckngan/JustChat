@@ -464,6 +464,33 @@ func initializeLB() {
 	return
 }
 
+func updateClientDataToAllLBs(c *ClientItem) {
+	i := 0
+	for i < 3 {
+		println("I: ", i)
+		if LBServers[i].Status == "online" && i != lbDesignation {
+			println("updating client data on: ", i)
+
+			conn, err := rpc.Dial("tcp", LBServers[i].Address)
+			if err != nil {
+				println("Error: ", err.Error())
+			}
+
+			var nC NewClientObj
+			var lbReply NodeListReply
+
+			nC.ClientObject = c
+
+			callError := conn.Call("LBService.UpdateClient", nC, &lbReply)
+			if callError != nil {
+				println("Error 2: ", callError.Error())
+			}
+		}
+		i++
+	}
+	return
+}
+
 func sendClientDataToAllLBs(c *ClientItem) {
 	i := 0
 	for i < 3 {
@@ -486,10 +513,8 @@ func sendClientDataToAllLBs(c *ClientItem) {
 				println("Error 2: ", callError.Error())
 			}
 		}
-
 		i++
 	}
-
 	return
 }
 
@@ -544,6 +569,11 @@ func authenticationFailure(username string, password string, pubAddr string) boo
 		if (*next).Username == username {
 			if (*next).Password == password {
 				//username match and password match
+				// update client with new rpc address
+				(*next).PubRPCAddr = pubAddr
+				updateClient := &ClientItem{username, password, "CurrentServer", pubAddr, nil}
+				updateClientDataToAllLBs(updateClient)
+
 				return false
 			}
 			//username exists but password doesn't match
@@ -556,6 +586,20 @@ func authenticationFailure(username string, password string, pubAddr string) boo
 	addClientToList(username, password, pubAddr)
 
 	return false
+}
+
+// Method to update a clients' RPC info upon rejoining
+func updateClientInfo(newClient *ClientItem) {
+	next := clientList
+
+	for next != nil {
+		if (*next).Username == newClient.Username {
+			(*next).PubRPCAddr = newClient.PubRPCAddr
+			break
+		}
+		next = (*next).NextClient
+	}
+	return
 }
 
 func addClient(newClient *ClientItem) {
@@ -689,6 +733,15 @@ func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) err
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
 
+	return nil
+}
+
+func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply) error {
+	clientConditional.L.Lock()
+
+	updateClientInfo(message.ClientObject)
+	clientConditional.L.Unlock()
+	clientConditional.Signal()
 	return nil
 }
 
