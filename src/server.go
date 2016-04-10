@@ -1084,7 +1084,7 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg){
 
   if os.IsNotExist(err) {
 
- path := "./Users/"
+ path := "../ChatHistory/"
  err := os.MkdirAll(path, 0777)
 if err != nil {
     println("YOURE DOING SOMETHING WRONfddgssG")
@@ -1099,7 +1099,7 @@ checkError(er)
 f.Close()
  }
 
-f, err := os.OpenFile("./Users/Users.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+f, err := os.OpenFile("./ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 if err != nil {
     println("YOURE DOING SOMETHING WRONG")
 }
