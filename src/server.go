@@ -456,6 +456,10 @@ func checkError(err error) {
 func deleteNodeFromList(udpAddr string) {
 	//As every node is unique in its UDP address we can assume deletion after we find that address
 	//and return right away
+    // Storage might have already deleted the node
+	if isNewNode(udpAddr){
+		return
+	}
 
 	//initialize variable
 	i := serverList
