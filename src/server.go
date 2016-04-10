@@ -140,7 +140,9 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 	fmt.Printf("new msg from other server: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 	toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
+
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
+
 
 	checkBufFull()
 
@@ -258,16 +260,20 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	var hinder sync.WaitGroup
 	hinder.Add(2)
-	go func() {
+	go func(){
 		defer hinder.Done()
 		sendPublicMsgServers(message)
+		println("after go routine 1")
 	}()
-	go func() {
+	go func(){
 		defer hinder.Done()
 		sendPublicMsgClients(message)
+		println("after go routine 2")
 	}()
+
 	checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
 	hinder.Wait()
+	println("Bakc from sending messages before sending success to sender")
 	reply.Message = "success"
 	return nil
 }
@@ -285,11 +291,11 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 
 	var hinder sync.WaitGroup
 	hinder.Add(2)
-	go func() {
+	go func(){
 		defer hinder.Done()
 		sendPublicFileServers(file)
 	}()
-	go func() {
+	go func(){
 		defer hinder.Done()
 		sendPublicFileClients(file)
 	}()
@@ -884,26 +890,26 @@ func sendPublicMsgServers(message ClientMessage) {
 	toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
 	for next != nil {
-		go func(next *ServerItem, clockedMsg ClockedClientMsg) {
+		go func(next *ServerItem, clockedMsg ClockedClientMsg){
 			defer wg.Done()
-			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
-				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+			} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
 				//checkError(err)
-				if err != nil {
-					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
-					//it's dead but the ping will eventually take care of it
+				if err == nil {
+					fmt.Println("we sent a message to a server: ", reply.Message)
 				} else {
-					var reply ServerReply
-					err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
-					//checkError(err)
-					if err == nil {
-						fmt.Println("we received a reply from the server: ", reply.Message)
-					} else {
-						println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error call.")
-					}
-					systemService.Close()
+					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error call.")
 				}
+				systemService.Close()
 			}
+		}
 
 		}(next, clockedMsg)
 		next = (*next).NextServer
@@ -914,6 +920,7 @@ func sendPublicMsgServers(message ClientMessage) {
 }
 
 func sendPublicMsgClients(message ClientMessage) {
+	println("inside sendPublicMsgClients")
 	clientListMutex.Lock()
 	next := clientList
 	size := sizeOfClientList()
@@ -922,10 +929,8 @@ func sendPublicMsgClients(message ClientMessage) {
 	wg.Add(size)
 
 	for next != nil {
-		go func(next *ClientItem, message ClientMessage) {
-
+		go func(next *ClientItem, message ClientMessage){
 			defer wg.Done()
-
 			if (*next).Username != message.Username {
 				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 				//checkError(err)
@@ -941,7 +946,9 @@ func sendPublicMsgClients(message ClientMessage) {
 					err = systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
 					//checkError(err)
 					if err == nil {
-						fmt.Println("we received a reply from the server: ", reply.Message)
+						fmt.Println("We sent a message to a client: ", reply.Message)
+					}else{
+					println("we tried sending a message to a client but got: ", err)
 					}
 					systemService.Close()
 				}
@@ -952,6 +959,7 @@ func sendPublicMsgClients(message ClientMessage) {
 		next = (*next).NextClient
 	}
 	wg.Wait()
+	println("AFTER WAIT")
 	return
 }
 
@@ -979,25 +987,25 @@ func sendPublicFileServers(file FileData) {
 	wg.Add(size)
 
 	for next != nil {
-		go func(next *ServerItem, file FileData) {
-			defer wg.Done()
-			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+		go func(next *ServerItem, file FileData){
+		defer wg.Done()
+		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 
-				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
-				//checkError(err)
-				if err != nil {
-					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
-					//it's dead but the ping will eventually take care of it
-				} else {
-					var reply ServerReply
-					err = systemService.Call("NodeService.SendPublicFile", file, &reply)
-					checkError(err)
-					if err == nil {
-						fmt.Println("we received a reply from the server: ", reply.Message)
-					}
-					systemService.Close()
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+				//it's dead but the ping will eventually take care of it
+			} else {
+				var reply ServerReply
+				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+				checkError(err)
+				if err == nil {
+					fmt.Println("sent file to server: ", reply.Message)
 				}
+				systemService.Close()
 			}
+		}
 		}(next, file)
 		next = (*next).NextServer
 	}
@@ -1013,28 +1021,29 @@ func sendPublicFileClients(file FileData) {
 	var wg sync.WaitGroup
 	wg.Add(size)
 
+
 	for next != nil {
-		go func(next *ClientItem, file FileData) {
-			defer wg.Done()
-			if (*next).Username != file.Username {
-				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
-				//checkError(err)
-				if err != nil {
-					println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
-					//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
+		go func(next *ClientItem, file FileData){
+		defer wg.Done()
+		if (*next).Username != file.Username {
+			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
+				//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
 					clientListMutex.Lock()
 					deleteClientFromList((*next).Username)
 					clientListMutex.Unlock()
-				} else {
-					var reply ServerReply
-					err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
-					checkError(err)
-					if err == nil {
-						fmt.Println("we received a reply from the server: ", reply.Message)
-					}
-					systemService.Close()
+			} else {
+				var reply ServerReply
+				err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
+				checkError(err)
+				if err == nil {
+					fmt.Println("sent file to client: ", reply.Message)
 				}
+				systemService.Close()
 			}
+		}
 		}(next, file)
 
 		next = (*next).NextClient
