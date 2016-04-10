@@ -97,6 +97,9 @@ var Logger *govec.GoLog
 var msgMutex sync.Mutex
 var msgConditional *sync.Cond
 
+var sendMutex sync.Mutex
+var sendCond *sync.Cond
+
 //========================== Client RPC Service ======================== //
 //RPC Value for receiving messages
 type ClientMessageService int
@@ -128,6 +131,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 	Logger.LogLocalEvent("rpc chat server updated")
 
 	// make the rpc call to the server as it's updated
+	fmt.Print("Changing Chat Server")
 	attempts := 0
 	for {
 		if attempts > 5 {
@@ -141,9 +145,12 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 			attempts++
 		} else {
 			chatServer = chatConn
+			initChatServerConnection()
 			break
 		}
 	}
+
+	sendCond.Signal()
 	return nil
 }
 
@@ -191,6 +198,9 @@ func main() {
 
 	msgMutex = sync.Mutex{}
 	msgConditional = sync.NewCond(&msgMutex)
+
+	sendMutex = sync.Mutex{}
+	sendCond = sync.NewCond(&sendMutex)
 
 	// allocate messageChannel for global access
 	messageChannel = make(chan string, bufferMax)
@@ -433,8 +443,13 @@ func filterAndSendMessage(msg []string) {
 
 		sendMsg.Message = command
 		sendMsg.UserName = username
+		sendCond.L.Lock()
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
-		checkError(err)
+		for (err != nil){
+			sendCond.Wait()
+			err = chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
+		}
+		sendCond.L.Unlock()
 
 	} else if len(msg) == 2 {
 		command = strings.TrimSpace(msg[1])
@@ -479,8 +494,13 @@ func sendPublicFile(filepath string) {
 	var fileData FileData
 	fileData, err := packageFile(filepath)
 	if err == nil {
+		sendCond.L.Lock()
 		err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
-		checkError(err)
+		for (err != nil){
+			sendCond.Wait()
+			err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
+		}
+		sendCond.L.Unlock()
 	} else {
 		messageChannel <- "Please check filepath"
 	}
@@ -518,8 +538,13 @@ func sendPrivateFile(user string, filepath string) {
 	request.UserName = username
 	request.RequestedUsername = user
 	request.RpcAddress = clientRpcAddress
+	sendCond.L.Lock()
 	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
-	checkError(err)
+	for (err != nil){
+		sendCond.Wait()
+		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
+	}
+	sendCond.L.Unlock()
 	// reply should be IP port of the
 	return
 }

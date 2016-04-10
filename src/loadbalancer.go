@@ -27,7 +27,7 @@ type LBService int
 type ClientItem struct {
 	Username      string
 	Password      string
-	CurrentServer string
+	CurrentServer string //UDP of server attached to
 	PubRPCAddr    string
 	NextClient    *ClientItem
 }
@@ -281,7 +281,6 @@ func deleteNodeFromList(udpAddr string) {
 		i = (*i).NextServer
 		j = (*i).NextServer
 	}
-
 	return
 }
 
@@ -302,7 +301,11 @@ func heartbeetCheck() {
 				if err != nil {
 					//assume node is dead
 					println("He's Dead Jim!")
-					deleteNodeFromList(i.UDP_IPPORT)
+					servA := i.UDP_IPPORT
+					deleteNodeFromList(servA)
+					
+					go giveClientNewServer(servA)
+
 				} else {
 					//Server Connected
 					cc.Close()
@@ -314,6 +317,69 @@ func heartbeetCheck() {
 		nodeConditional.L.Unlock()
 	}
 }
+
+func giveClientNewServer(serverAddr string) {
+	println("Giving new server")
+	i := clientList
+	println(i.CurrentServer)
+	println(serverAddr)
+	for (i != nil){
+		if(i.CurrentServer == serverAddr){
+			println("MATCH")
+			
+
+
+			go func(val string, name string){
+				println("About tl lock")
+
+				nodeConditional.L.Lock()
+				for serverList == nil {
+					nodeConditional.Wait()
+				}
+				println("Done waiting")
+				
+				s, _ := getServerForCLient()
+
+
+
+				nodeConditional.L.Unlock()
+				nodeConditional.Signal()
+
+
+
+				clientConn, err := rpc.Dial("tcp", val)
+				if (err != nil){
+					println("Error changing messageing server. Client doesn't have good node")
+					return
+				}
+
+
+				var clientReply ServerReply
+				var rpcUpdateMessage ChatServer
+
+				rpcUpdateMessage.ServerName = "Server N"
+				rpcUpdateMessage.ServerRpcAddress = s.RPC_CLIENT_IPPORT
+
+				addServerDataToClient(s.UDP_IPPORT, name)
+
+				println("Assigning Client New Node")
+				callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
+				if (callErr != nil){
+					println("Error changing messageing server. Client doesn't have good node")
+					return
+				}
+			}(i.PubRPCAddr, i.Username)
+
+		}
+		i = (*i).NextClient
+		}
+
+		if(i == nil){
+		return
+	}
+	return
+}
+
 
 func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
@@ -457,11 +523,7 @@ func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
 
-	nodeConditional.L.Lock()
-
-	for serverList == nil {
-		nodeConditional.Wait()
-	}
+	
 
 	next = serverList
 
@@ -475,8 +537,6 @@ func getServerForCLient() (*ServerItem, error) {
 
 		next = (*next).NextServer
 	}
-
-	nodeConditional.L.Unlock()
 
 	if lowestNumberServer != nil {
 		return lowestNumberServer, nil
@@ -612,6 +672,20 @@ func isNewNode(ident string) bool {
 	return true
 }
 
+func addServerDataToClient(addrInfo string, clientUname string) {
+	i := clientList
+	for(i != nil) {
+		if(i.Username == clientUname){
+			i.CurrentServer = addrInfo
+			return
+		}
+
+		i = (*i).NextClient
+	}
+
+	return
+}
+
 /**************************************************
 	RPC METHODS FOR LOAD BALANCERS
 *****************************************************/
@@ -690,6 +764,7 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 	nodeConditional.L.Unlock()
 	nodeConditional.Signal()
+	
 
 	return nil
 }
@@ -738,6 +813,8 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	} else {
 
 		clientConn, err := rpc.Dial("tcp", message.RpcAddress)
+
+
 		if err != nil {
 			reply.Message = "DIAL-ERROR"
 			return nil
@@ -748,10 +825,24 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 		//Dial and update the client with their server address
 		println("Getting server for client")
+		nodeConditional.L.Lock()
+
+
+		for serverList == nil {
+			nodeConditional.Wait()
+		}
+
+		println("Selecting server")
 		selectedServer, selectionError := getServerForCLient()
+		nodeConditional.L.Unlock()
+		nodeConditional.Signal()
+
+
 		if selectionError != nil {
 			println(selectionError.Error())
 		}
+
+		addServerDataToClient(selectedServer.UDP_IPPORT, message.UserName)
 
 		rpcUpdateMessage.ServerName = "Server X"
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
