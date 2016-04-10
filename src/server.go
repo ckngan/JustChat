@@ -31,10 +31,6 @@ type ServerReply struct {
 	Message string // value; depends on the call
 }
 
-type MessageObj struct {
-	Message string
-}
-
 type NodeListReply struct {
 	ListOfNodes *ServerItem
 }
@@ -56,7 +52,7 @@ type NewNodeSetup struct {
 
 // Message Format from client
 type ClientMessage struct {
-	UserName string
+	Username string
 	Message  string
 }
 
@@ -68,28 +64,25 @@ type ClockedClientMsg struct {
 }
 
 type ClientRequest struct {
-	UserName          string // client making the request for the username
-	RequestedUsername string // return the rpc address of this client
-	RpcAddress        string // RpcAddress of the client making the request
-	FileName          string
+	Username string // requesting info for this client
 }
 
 // FileInfoData to build file structure in rpc call
 type FileData struct {
-	UserName string
+	Username string
 	FileName string
 	FileSize int64
 	Data     []byte
 }
 
 type FileInfo struct {
-	UserName string
+	Username string
 	FileName string
 }
 
 // FileInfoData to build file structure in rpc call
 type StoreFileData struct {
-	UserName   string
+	Username   string
 	UDP_IPPORT string
 	FileName   string
 	FileSize   int64
@@ -105,7 +98,7 @@ type ClientItem struct {
 
 //cient info
 type ClientInfo struct {
-	UserName   string
+	Username   string
 	RPC_IPPORT string
 }
 
@@ -119,7 +112,7 @@ var serverList *ServerItem
 var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
-var thisClock int // number of messages received from own clients
+var thisClock int                   // number of messages received from own clients
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
 var numMsgsRcvd int                 // # of messages this node has received
 
@@ -158,9 +151,9 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 
 func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new File")
-	println("username: " + args.UserName + " FileName: " + args.FileName)
+	println("username: " + args.Username + " FileName: " + args.FileName)
 	file := FileData{
-		UserName: args.UserName,
+		Username: args.Username,
 		FileName: args.FileName,
 		FileSize: args.FileSize,
 		Data:     args.Data}
@@ -174,7 +167,7 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("YOU'VE BEEN CHOSEN TO STORE A FILE :D")
 	file := FileData{
-		UserName: args.UserName,
+		Username: args.Username,
 		FileName: args.FileName,
 		FileSize: args.FileSize,
 		Data:     args.Data}
@@ -186,7 +179,7 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 
 func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 	println("gimme shit")
-	path := "../Files/" + args.UserName + "/" + args.FileName
+	path := "../Files/" + args.Username + "/" + args.FileName
 
 	fi, err := os.Stat(path)
 
@@ -206,7 +199,7 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 
 		checkError(err)
 
-		reply.UserName = args.UserName
+		reply.Username = args.Username
 		reply.FileName = args.FileName
 		reply.FileSize = fi.Size()
 		reply.Data = Data
@@ -218,7 +211,7 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
 	println("delete that shit i told you to store")
 
-	path := "../Files/" + args.UserName + "/" + args.FileName
+	path := "../Files/" + args.Username + "/" + args.FileName
 
 	// detect if file exists
 	_, err := os.Stat(path)
@@ -242,7 +235,7 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 
 	println("someone wants to join us :D  CLIENT: ", message.RPC_IPPORT)
 	println("Size of client list: ", sizeOfClientList())
-	addClient(message.UserName, message.RPC_IPPORT)
+	addClient(message.Username, message.RPC_IPPORT)
 	println("New Size of client list: ", sizeOfClientList())
 	println("NewUser is: ", clientList.Username)
 	//TODO: STORE USER DATA
@@ -254,10 +247,10 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 // method for public message transfer
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	println("We received a new message")
-	println("username: " + args.UserName + " Message: " + args.Message)
+	println("username: " + args.Username + " Message: " + args.Message)
 
 	message := ClientMessage{
-		UserName: args.UserName,
+		Username: args.Username,
 		Message:  args.Message}
 
 	thisClock++
@@ -281,10 +274,10 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 // method for public file transfer
 func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new file")
-	println("username: " + args.UserName + "filename:" + args.FileName)
+	println("username: " + args.Username + "filename:" + args.FileName)
 
 	file := FileData{
-		UserName: args.UserName,
+		Username: args.Username,
 		FileName: args.FileName,
 		FileSize: args.FileSize,
 		Data:     args.Data}
@@ -299,7 +292,7 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	/*
 		//store in k-1 other servers and keep track
 		storeFile := StoreFileData{
-			UserName : args.UserName,
+			Username : args.Username,
 			UDP_IPPORT: RECEIVE_PING_ADDR,
 			FileName : args.FileName,
 			FileSize : args.FileSize,
@@ -311,13 +304,13 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 }
 
 // Method to request client information for private correspondence
-func (ms *MessageService) SendPrivate(args *MessageObj, reply *ClientInfo) error {
+func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) error {
 	println("We received a new file")
-	println("username requested: " + args.Message)
+	println("username requested: " + args.Username)
 	//find requested user's IP and send it back
-	rep := getAddr(args.Message)
+	rep := getAddr(args.Username)
 
-	reply.UserName = args.Message
+	reply.Username = args.Username
 	reply.RPC_IPPORT = rep
 
 	return nil
@@ -364,7 +357,7 @@ func main() {
 	clientList = nil
 
 	// setup for chat history
-	//toHistoryBuf[0] = ClockedClientMsg{ClientMsg: ClientMessage{UserName: "bob", Message: "zzz"}, ServerId: "thisServer", Clock: 5}
+	//toHistoryBuf[0] = ClockedClientMsg{ClientMsg: ClientMessage{Username: "bob", Message: "zzz"}, ServerId: "thisServer", Clock: 5}
 	toHistoryBuf = make([]ClockedClientMsg, 50)
 	thisClock = 0
 	numMsgsRcvd = 0
@@ -456,8 +449,8 @@ func checkError(err error) {
 func deleteNodeFromList(udpAddr string) {
 	//As every node is unique in its UDP address we can assume deletion after we find that address
 	//and return right away
-    // Storage might have already deleted the node
-	if isNewNode(udpAddr){
+	// Storage might have already deleted the node
+	if isNewNode(udpAddr) {
 		return
 	}
 
@@ -900,7 +893,7 @@ func sendPublicMsgClients(message ClientMessage) {
 
 	for next != nil {
 
-		if (*next).Username != message.UserName {
+		if (*next).Username != message.Username {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 			//checkError(err)
 			if err != nil {
@@ -925,7 +918,7 @@ func sendPublicMsgClients(message ClientMessage) {
 
 func storeFile(file FileData) {
 
-	path := "../Files/" + file.UserName + "/"
+	path := "../Files/" + file.Username + "/"
 	err := os.MkdirAll(path, 0777)
 	checkError(err)
 	println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
@@ -965,7 +958,7 @@ func sendPublicFileClients(file FileData) {
 	next := clientList
 
 	for next != nil {
-		if (*next).Username != file.UserName {
+		if (*next).Username != file.Username {
 			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 			//checkError(err)
 			if err != nil {
@@ -1047,7 +1040,6 @@ func getIP() (ip string) {
 	addrs, _ := net.LookupIP(host)
 	for _, addr := range addrs {
 		if ipv4 := addr.To4(); ipv4 != nil && !ipv4.IsLoopback() {
-			//fmt.Println("IPv4: ", ipv4.String())
 			ip = ipv4.String()
 		}
 	}
@@ -1058,12 +1050,12 @@ func getAddr(uname string) string {
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
 
-	var reply MessageObj
+	var reply ServerReply
 
-	messageObject := MessageObj{
-		Message: uname}
+	clientRequest := ClientRequest{
+		Username: uname}
 	println("getting client addr from server")
-	err = systemService.Call("NodeService.GetClientAddr", messageObject, &reply)
+	err = systemService.Call("NodeService.GetClientAddr", clientRequest, &reply)
 	checkError(err)
 	fmt.Println("we received a reply from the server: ", reply.Message)
 	systemService.Close()
@@ -1082,50 +1074,50 @@ func checkBufFull() {
 	}
 }
 
-func writeHistoryToFile(toHistoryBuf []ClockedClientMsg){
+func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 
-  _, err := os.Stat("../ChatHistory/ChatHistory.txt")
+	_, err := os.Stat("../ChatHistory/ChatHistory.txt")
 
-  if os.IsNotExist(err) {
+	if os.IsNotExist(err) {
 
- path := "../ChatHistory/"
- err := os.MkdirAll(path, 0777)
-if err != nil {
-    println("YOURE DOING SOMETHING WRONfddgssG")
-}
-checkError(err)
+		path := "../ChatHistory/"
+		err := os.MkdirAll(path, 0777)
+		if err != nil {
+			println("YOURE DOING SOMETHING WRONfddgssG")
+		}
+		checkError(err)
 
- f, er := os.Create("../ChatHistory/ChatHistory.txt")
-  if er != nil {
-    println("hyjklhjYOURE DOING SOMETHING WRONfddgssG")
-}
-checkError(er)
-f.Close()
- }
+		f, er := os.Create("../ChatHistory/ChatHistory.txt")
+		if er != nil {
+			println("hyjklhjYOURE DOING SOMETHING WRONfddgssG")
+		}
+		checkError(er)
+		f.Close()
+	}
 
-f, err := os.OpenFile("./ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
-if err != nil {
-    println("YOURE DOING SOMETHING WRONG")
-}
-defer f.Close()
+	f, err := os.OpenFile("./ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		println("YOURE DOING SOMETHING WRONG")
+	}
+	defer f.Close()
 
-i:= 0
-for i < len(toHistoryBuf){
-    msg := toHistoryBuf[i]
-    uname := msg.ClientMsg.UserName
-    clientmes := msg.ClientMsg.Message
-    serverid := msg.ServerId
-    clock := msg.Clock
-    stringClock := strconv.Itoa(clock)
+	i := 0
+	for i < len(toHistoryBuf) {
+		msg := toHistoryBuf[i]
+		uname := msg.ClientMsg.Username
+		clientmes := msg.ClientMsg.Message
+		serverid := msg.ServerId
+		clock := msg.Clock
+		stringClock := strconv.Itoa(clock)
 
-    n, erro := f.WriteString(`{"Username" : "`+uname+`", "Message" : "`+clientmes+`", "ServerId" : "`+serverid+`", "clock" : "`+stringClock+`"},`)
-      if erro != nil {
-          println("YOURE DOING SOMETHING WRONG")
-      }else{
-          println("we wrote ", n , " bytes")
-      }
- i = i + 1
-}
+		n, erro := f.WriteString(`{"Username" : "` + uname + `", "Message" : "` + clientmes + `", "ServerId" : "` + serverid + `", "clock" : "` + stringClock + `"},`)
+		if erro != nil {
+			println("YOURE DOING SOMETHING WRONG")
+		} else {
+			println("we wrote ", n, " bytes")
+		}
+		i = i + 1
+	}
 
-return
+	return
 }

@@ -21,13 +21,13 @@ import (
 
 // Message Format from client
 type ClientMessage struct {
-	UserName string
+	Username string
 	Message  string
 }
 
 // Struct to join chat service
 type NewClientSetup struct {
-	UserName   string
+	Username   string
 	Password   string
 	RpcAddress string
 }
@@ -40,7 +40,7 @@ type ChatServer struct {
 
 // FileData to build file structure in rpc call
 type FileData struct {
-	UserName string
+	Username string
 	FileName string
 	FileSize int64
 	Data     []byte
@@ -48,13 +48,11 @@ type FileData struct {
 
 // Struct for client information
 type ClientRequest struct {
-	UserName          string // client making the request for the username
-	RequestedUsername string // return the rpc address of this client
-	RpcAddress        string // RpcAddress of the client making the request
+	Username string // return the rpc address of this client
 }
 
 type ClientInfo struct {
-	UserName   string
+	Username   string
 	RPC_IPPORT string
 }
 
@@ -107,7 +105,7 @@ type ClientMessageService int
 // Method for a client to call another client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
 
-	reply.Message = handleFileTransfer(args.FileName, args.UserName, args.Data)
+	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
 	Logger.LogLocalEvent("received file transfer")
 	return nil
 }
@@ -115,10 +113,10 @@ func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE FILE \""+args.FileName+"\" FROM => ", 33, 1)
-	messageOwner := editText(args.UserName, 42, 1)
+	messageOwner := editText(args.Username, 42, 1)
 	output := privateFlag + messageOwner
 	fmt.Println(output)
-	handleFileTransfer(args.FileName, args.UserName, args.Data)
+	handleFileTransfer(args.FileName, args.Username, args.Data)
 
 	reply.Message = ""
 	return nil
@@ -157,7 +155,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
 	re := regexp.MustCompile(`\r?\n`)
-	messageOwner := editText(args.UserName, 33, 1)
+	messageOwner := editText(args.Username, 33, 1)
 	messageBody := editText(args.Message, 32, 1)
 	output := re.ReplaceAllString(messageOwner+": "+messageBody, "")
 	messageChannel <- output
@@ -171,7 +169,7 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
 	privateFlag := editText("PRIVATE MESSAGE FROM => ", 33, 1)
-	messageOwner := editText(args.UserName, 42, 1)
+	messageOwner := editText(args.Username, 42, 1)
 	messageBody := editText(args.Message, 33, 1)
 	output := privateFlag + messageOwner + ": " + messageBody
 	messageChannel <- output
@@ -301,7 +299,7 @@ func joinLoadBalancerServer() {
 		// read user username and send to chat server
 		uname := getClientUsername()
 		pword := getClientPassword()
-		message.UserName = uname
+		message.Username = uname
 		message.Password = pword
 		message.RpcAddress = clientRpcAddress
 
@@ -328,7 +326,7 @@ func initChatServerConnection() {
 	var reply ServerReply
 	var info ClientInfo
 
-	info.UserName = username
+	info.Username = username
 	info.RPC_IPPORT = clientRpcAddress
 
 	err := chatServer.Call("MessageService.ConnectionInit", info, &reply)
@@ -442,10 +440,10 @@ func filterAndSendMessage(msg []string) {
 	if len(msg) == 1 {
 
 		sendMsg.Message = command
-		sendMsg.UserName = username
+		sendMsg.Username = username
 		sendCond.L.Lock()
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
-		for (err != nil){
+		for err != nil {
 			sendCond.Wait()
 			err = chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		}
@@ -496,7 +494,7 @@ func sendPublicFile(filepath string) {
 	if err == nil {
 		sendCond.L.Lock()
 		err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
-		for (err != nil){
+		for err != nil {
 			sendCond.Wait()
 			err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
 		}
@@ -533,14 +531,12 @@ func packageFile(path string) (fileData FileData, err error) {
 // func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply)
 func sendPrivateFile(user string, filepath string) {
 	var request ClientRequest
-	var reply ServerReply
+	var reply ClientInfo
 
-	request.UserName = username
-	request.RequestedUsername = user
-	request.RpcAddress = clientRpcAddress
+	request.Username = user
 	sendCond.L.Lock()
 	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
-	for (err != nil){
+	for err != nil {
 		sendCond.Wait()
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
