@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	//"strings"
+	"strings"
 	"net/rpc"
 	"os"
 	"reflect"
@@ -113,8 +113,9 @@ var serverListMutex *sync.Mutex
 var clientList *ClientItem
 var clientListMutex *sync.Mutex
 var thisClock int                   // number of messages received from own clients
-var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
 var numMsgsRcvd int                 // # of messages this node has received
+var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
+var historyMutex *sync.Mutex
 
 //****************************BACK-END RPC METHODS***********************************//
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
@@ -137,7 +138,7 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 
 	numMsgsRcvd++
 	fmt.Printf("new msg from other server: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
-	//toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
+	toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
 
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
 
@@ -350,7 +351,7 @@ func main() {
 	// PARSE ARGS
 	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr,
-			"Usage: %s [load_balancer_ip:port1 udp_ping_ip:port2]\n",
+			"Usage: %s [loadbalancer ip:port1] [udp_ping ip:port2]\n",
 			os.Args[0])
 		os.Exit(1)
 	}
@@ -873,12 +874,14 @@ func sendPublicMsgServers(message ClientMessage) {
 	var wg sync.WaitGroup
 	wg.Add(size)
 
+	id := strings.Replace(RECEIVE_PING_ADDR, ".", "", -1)
+
 	clockedMsg := ClockedClientMsg{
 		ClientMsg: message,
-		ServerId:  RECEIVE_PING_ADDR,
+		ServerId:  id,
 		Clock:     thisClock}
 
-	//toHistoryBuf[numMsgsRcvd-1] = clockedMsg
+	toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
 	for next != nil {
 		go func(next *ServerItem, clockedMsg ClockedClientMsg) {
@@ -1127,13 +1130,14 @@ func getAddr(uname string) string {
 
 func checkBufFull() {
 	if numMsgsRcvd == 50 {
-		// TODO sort & write to file
+		// TODO sort
 		fmt.Println(toHistoryBuf)
+		writeHistoryToFile(toHistoryBuf)
 
 		// flush all variables
 		thisClock = 0
 		numMsgsRcvd = 0
-		toHistoryBuf = nil
+		//toHistoryBuf = nil
 	}
 }
 
@@ -1146,26 +1150,25 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		path := "../ChatHistory/"
 		err = os.MkdirAll(path, 0777)
 		if err != nil {
-			println("YOURE DOING SOMETHING WRONfddgssG")
+			println("error: couldn't make chat history folder")
 		}
 		checkError(err)
 
 		f, er := os.Create("../ChatHistory/ChatHistory.txt")
 		if er != nil {
-			println("hyjklhjYOURE DOING SOMETHING WRONfddgssG")
+			println("error: couldn't create chat history file")
 		}
 		checkError(er)
 		f.Close()
 	}
 
-	f, err := os.OpenFile("./ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		println("YOURE DOING SOMETHING WRONG")
+	f, errr := os.OpenFile("../ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	if errr != nil {
+		println("error: couldn't open chat history file")
 	}
 	defer f.Close()
 
-	i := 0
-	for i < len(toHistoryBuf) {
+	for i := 0; i < len(toHistoryBuf); i++ {
 		msg := toHistoryBuf[i]
 		uname := msg.ClientMsg.Username
 		clientmes := msg.ClientMsg.Message
@@ -1173,13 +1176,12 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		clock := msg.Clock
 		stringClock := strconv.Itoa(clock)
 
-		n, erro := f.WriteString(`{"Username" : "` + uname + `", "Message" : "` + clientmes + `", "ServerId" : "` + serverid + `", "clock" : "` + stringClock + `"},`)
+		n, erro := f.WriteString("{Username: " + uname + ", Message: " + clientmes + ", ServerId: " + serverid + ", clock: " + stringClock + "}\n")
 		if erro != nil {
-			println("YOURE DOING SOMETHING WRONG")
+			println("error: couldn't write message to file")
 		} else {
 			println("we wrote ", n, " bytes")
 		}
-		i = i + 1
 	}
 
 	return

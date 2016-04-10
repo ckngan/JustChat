@@ -726,7 +726,7 @@ func checkError(err error) {
 func main() {
 	if len(os.Args) != 4 {
 		fmt.Fprintf(os.Stderr,
-			"Usage: %s [ip:port1 ip:port2 ip:port3]\n",
+			"Usage: %s [loadbalancer ip:port1] [loadbalancer ip:port2] [loadbalancer ip:port3]\n",
 			os.Args[0])
 		os.Exit(1)
 	}

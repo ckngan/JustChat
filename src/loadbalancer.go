@@ -137,7 +137,7 @@ var Logger *govec.GoLog
 func main() {
 
 	// Parse arguments
-	usage := fmt.Sprintf("Usage: %s [client ip:port] [server ip:port] [heartbeat ip:port] \n", os.Args[0])
+	usage := fmt.Sprintf("Usage: %s [client ip:port1] [server ip:port2] [heartbeat ip:port3] \n", os.Args[0])
 	if len(os.Args) != 4 {
 		fmt.Printf(usage)
 		os.Exit(1)
