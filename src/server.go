@@ -1114,7 +1114,7 @@ for i < len(toHistoryBuf){
     clock := msg.Clock
     stringClock := strconv.Itoa(clock)
 
-    n, erro := f.WriteString(`{"Username" : "`+uname+`", "Message" : "`+clientmes+`", "ServerId" : "`+serverid+`", "clock" : "`+stringClock+`"}`)
+    n, erro := f.WriteString(`{"Username" : "`+uname+`", "Message" : "`+clientmes+`", "ServerId" : "`+serverid+`", "clock" : "`+stringClock+`"},`)
       if erro != nil {
           println("YOURE DOING SOMETHING WRONG")
       }else{
