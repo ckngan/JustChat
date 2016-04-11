@@ -1158,7 +1158,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 //
 //	This returns the list of all availible files to a client
 //
-func (msgSvc *MessageService) getFileList(message *string, reply *([]string)) error {
+func (msgSvc *MessageService) GetFileList(message *string, reply *([]string)) error {
 	filesCond.L.Lock()
 	(*reply) = globalFileList
 	filesCond.L.Unlock()

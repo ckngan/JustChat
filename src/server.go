@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"net/rpc"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -173,8 +173,8 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 	return nil
 }
 
-func (nodeSvc *NodeService) GetFile(filename string, reply *FileData) error {
-	path := "../Files/"+ filename
+func (nodeSvc *NodeService) GetFile(filename *string, reply *FileData) error {
+	path := "../Files/" + *filename
 
 	fi, err := os.Stat(path)
 
@@ -193,7 +193,7 @@ func (nodeSvc *NodeService) GetFile(filename string, reply *FileData) error {
 
 		checkError(err)
 		reply.Username = "202"
-		reply.FileName = filename
+		reply.FileName = *filename
 		reply.FileSize = fi.Size()
 		reply.Data = Data
 	}
@@ -204,7 +204,7 @@ func (nodeSvc *NodeService) GetFile(filename string, reply *FileData) error {
 func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
 	println("Deleting file: ", args.FileName)
 
-	path := "../Files/"+ args.FileName
+	path := "../Files/" + args.FileName
 
 	// detect if file exists
 	_, err := os.Stat(path)
@@ -244,11 +244,11 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	var hinder sync.WaitGroup
 	hinder.Add(2)
-	go func(){
+	go func() {
 		defer hinder.Done()
 		sendPublicMsgServers(message)
 	}()
-	go func(){
+	go func() {
 		defer hinder.Done()
 		sendPublicMsgClients(message)
 	}()
@@ -273,15 +273,14 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 
 	var hinder sync.WaitGroup
 	hinder.Add(2)
-	go func(){
+	go func() {
 		defer hinder.Done()
 		sendPublicFileServers(file)
 	}()
-	go func(){
+	go func() {
 		defer hinder.Done()
 		sendPublicFileClients(file)
 	}()
-
 
 	storeFile(file)
 
@@ -310,7 +309,7 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 	return nil
 }
 
-func (ms *MessageService) GetFile(filename string, reply *FileData)error{
+func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 
 	serverListMutex.Lock()
 	next := serverList
@@ -318,7 +317,7 @@ func (ms *MessageService) GetFile(filename string, reply *FileData)error{
 
 	for next != nil {
 
-			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 			//checkError(err)
@@ -327,36 +326,35 @@ func (ms *MessageService) GetFile(filename string, reply *FileData)error{
 				reply.Username = "404"
 			} else {
 				var rep FileData
-				err = systemService.Call("NodeService.GetFile", filename, &rep)
+				err = systemService.Call("NodeService.GetFile", *filename, &rep)
 				checkError(err)
-				if err == nil && rep.Username != "404"{
+				if err == nil && rep.Username != "404" {
 					fmt.Println("sent file to client: ", rep.FileName)
 					reply.Username = "202"
 					reply.FileName = rep.FileName
 					reply.FileSize = rep.FileSize
 					reply.Data = rep.Data
 					break
-				}else{
+				} else {
 					reply.Username = "404"
 				}
 				systemService.Close()
-			 }
-			}else{
-				println("our server has it")
-				resp := possessFile(filename)
-				if resp.Username != "404"{
-					reply.Username = resp.Username
-					reply.FileName = resp.FileName
-					reply.FileSize = resp.FileSize
-					reply.Data = resp.Data
-                    break
-				}else{
-					reply.Username = "404"
-				}
 			}
+		} else {
+			println("our server has it")
+			resp := possessFile(*filename)
+			if resp.Username != "404" {
+				reply.Username = resp.Username
+				reply.FileName = resp.FileName
+				reply.FileSize = resp.FileSize
+				reply.Data = resp.Data
+				break
+			} else {
+				reply.Username = "404"
+			}
+		}
 		next = (*next).NextServer
 	}
-
 
 	return nil
 
@@ -419,7 +417,6 @@ func main() {
 	RPC_SYSTEM_IPPORT = ip + ":" + strconv.Itoa(RPC_system_port)
 	println("RPC PORT FOR SYSTEMS: " + RPC_SYSTEM_IPPORT)
 
-
 	//CLIENT tcp.rpc
 	messageService := new(MessageService)
 	rpc.Register(messageService)
@@ -431,7 +428,6 @@ func main() {
 	RPC_CLIENT_IPPORT = ip + ":" + strconv.Itoa(RPC_client_port)
 	println("RPC PORT FOR CLIENTS: " + RPC_CLIENT_IPPORT)
 
-
 	// UDP PING AND PING RECEIVE
 	PingAddr, err := net.ResolveUDPAddr("udp", SEND_PING_IPPORT)
 	checkError(err)
@@ -442,7 +438,7 @@ func main() {
 	RECEIVE_PING_ADDR = ListenConn.LocalAddr().String()
 	println("WE'RE LISTENING ON: ", RECEIVE_PING_ADDR)
 	println("we're sending pings on: ", SEND_PING_IPPORT)
-	joinStorageServers()			// Joining the servers through the LB
+	joinStorageServers() // Joining the servers through the LB
 	go initPingServers(PingAddr)
 	UDPService(ListenConn)
 }
@@ -787,7 +783,7 @@ func addClient(username string, rpc string) {
 
 /*
 * Checks whether a given username is already in the clientList
-*/
+ */
 
 func isNewClient(ident string) bool {
 	next := clientList
@@ -804,7 +800,7 @@ func isNewClient(ident string) bool {
 
 /*
 * Returns the RPC Address of a username if the username if in clientList, else return "not found"
-*/
+ */
 func returnClientAddr(ident string) string {
 
 	next := clientList
@@ -819,10 +815,9 @@ func returnClientAddr(ident string) string {
 	return "not found"
 }
 
-
 /*
 * Returns the size of the clientList
-*/
+ */
 func sizeOfClientList() (total int) {
 	next := clientList
 	total = 0
@@ -833,7 +828,6 @@ func sizeOfClientList() (total int) {
 
 	return
 }
-
 
 func sendPublicMsgServers(message ClientMessage) {
 
@@ -852,26 +846,26 @@ func sendPublicMsgServers(message ClientMessage) {
 	toHistoryBuf[numMsgsRcvd-1] = clockedMsg
 
 	for next != nil {
-		go func(next *ServerItem, clockedMsg ClockedClientMsg){
+		go func(next *ServerItem, clockedMsg ClockedClientMsg) {
 			defer wg.Done()
-		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
-			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
-				//it's dead but the ping will eventually take care of it
-			} else {
-				var reply ServerReply
-				err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
+			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 				//checkError(err)
-				if err == nil {
-					fmt.Println("we sent a message to a server: ", reply.Message)
+				if err != nil {
+					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+					//it's dead but the ping will eventually take care of it
 				} else {
-					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error on call.")
+					var reply ServerReply
+					err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
+					//checkError(err)
+					if err == nil {
+						fmt.Println("we sent a message to a server: ", reply.Message)
+					} else {
+						println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error on call.")
+					}
+					systemService.Close()
 				}
-				systemService.Close()
 			}
-		}
 
 		}(next, clockedMsg)
 		next = (*next).NextServer
@@ -891,7 +885,7 @@ func sendPublicMsgClients(message ClientMessage) {
 	wg.Add(size)
 
 	for next != nil {
-		go func(next *ClientItem, message ClientMessage){
+		go func(next *ClientItem, message ClientMessage) {
 			defer wg.Done()
 			if (*next).Username != message.Username {
 				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
@@ -942,25 +936,25 @@ func sendPublicFileServers(file FileData) {
 	wg.Add(size)
 
 	for next != nil {
-		go func(next *ServerItem, file FileData){
-		defer wg.Done()
-		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+		go func(next *ServerItem, file FileData) {
+			defer wg.Done()
+			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
 
-			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
-				//it's dead but the ping will eventually take care of it
-			} else {
-				var reply ServerReply
-				err = systemService.Call("NodeService.SendPublicFile", file, &reply)
-				checkError(err)
-				if err == nil {
-					fmt.Println("sent file to server: ", reply.Message)
+				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+				//checkError(err)
+				if err != nil {
+					println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+					//it's dead but the ping will eventually take care of it
+				} else {
+					var reply ServerReply
+					err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+					checkError(err)
+					if err == nil {
+						fmt.Println("sent file to server: ", reply.Message)
+					}
+					systemService.Close()
 				}
-				systemService.Close()
 			}
-		}
 		}(next, file)
 		next = (*next).NextServer
 	}
@@ -976,29 +970,28 @@ func sendPublicFileClients(file FileData) {
 	var wg sync.WaitGroup
 	wg.Add(size)
 
-
 	for next != nil {
-		go func(next *ClientItem, file FileData){
-		defer wg.Done()
-		if (*next).Username != file.Username {
-			systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
-			//checkError(err)
-			if err != nil {
-				println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
-				//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
+		go func(next *ClientItem, file FileData) {
+			defer wg.Done()
+			if (*next).Username != file.Username {
+				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
+				//checkError(err)
+				if err != nil {
+					println("SendPublicMsg To Clients: Client ", (*next).Username, " isn't accepting tcp conns so skip it... ")
+					//DELETE CLIENT IF CONNECTION NO LONGER ACCEPTING
 					clientListMutex.Lock()
 					deleteClientFromList((*next).Username)
 					clientListMutex.Unlock()
-			} else {
-				var reply ServerReply
-				err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
-				checkError(err)
-				if err == nil {
-					fmt.Println("sent file to client: ", reply.Message)
+				} else {
+					var reply ServerReply
+					err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
+					checkError(err)
+					if err == nil {
+						fmt.Println("sent file to client: ", reply.Message)
+					}
+					systemService.Close()
 				}
-				systemService.Close()
 			}
-		}
 		}(next, file)
 
 		next = (*next).NextClient
@@ -1006,24 +999,6 @@ func sendPublicFileClients(file FileData) {
 
 	wg.Wait()
 	return
-}
-
-func kStores(file StoreFileData) {
-
-	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
-	//checkError(err)
-	if err != nil {
-		println("lOAD BALANCER isn't accepting tcp conns..... ")
-	} else {
-		var reply ServerReply
-		err = systemService.Call("NodeService.StoreKFile", file, &reply)
-		checkError(err)
-		if err == nil {
-			fmt.Println("we received a reply from the server: ", reply.Message)
-		}
-		systemService.Close()
-	}
-
 }
 
 //
@@ -1108,7 +1083,7 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 	noPeriods := strings.Replace(RECEIVE_PING_ADDR, ".", "", -1)
 	safeFile := strings.Replace(noPeriods, ":", "-", 1)
 
-	_, err := os.Stat("../ChatHistory/"+safeFile+".txt")
+	_, err := os.Stat("../ChatHistory/" + safeFile + ".txt")
 
 	if os.IsNotExist(err) {
 
@@ -1119,9 +1094,8 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		}
 		checkError(err)
 
-
 		// create chat history file with server ID
-		f, er := os.Create("../ChatHistory/"+safeFile+".txt")
+		f, er := os.Create("../ChatHistory/" + safeFile + ".txt")
 		if er != nil {
 			println("error: couldn't create chat history file")
 		}
@@ -1154,8 +1128,8 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 	return
 }
 
-func possessFile(filename string)( reply FileData){
-	path := "../Files/"+ filename
+func possessFile(filename string) (reply FileData) {
+	path := "../Files/" + filename
 
 	fi, err := os.Stat(path)
 
@@ -1178,7 +1152,7 @@ func possessFile(filename string)( reply FileData){
 			Username: "202",
 			FileName: filename,
 			FileSize: fi.Size(),
-			Data: Data}
+			Data:     Data}
 	}
 	return
 }
