@@ -157,7 +157,7 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 }
 
 /*
-*method to send a public message out to all the other servers that are connected
+*method to send a public message out from a server to all clients that are connected
 */
 func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
 	historyMutex.Lock()
@@ -185,7 +185,7 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 }
 
 /*
-*method to send a public file out to all the other nodes that are connected
+*method to send a public file out from a server to all clients that are connected
 */
 func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new File")
