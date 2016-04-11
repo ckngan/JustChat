@@ -399,7 +399,7 @@ func giveClientNewServer(serverAddr string) {
 				addServerDataToClient(s.UDP_IPPORT, name)
 
 				println("Assigning Client New Node")
-				Logger.LogLocalEvent("updating client with new ChatServer")
+				Logger.LogLocalEvent("updating client with new chat server")
 				callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 				if callErr != nil {
 					println("Error changing messaging server. Client doesn't have good node")
@@ -433,7 +433,7 @@ func addLBToActiveList(i int) {
 //	balancer is now online.
 //
 func contactLBsToAnnounceSelf() {
-	for i:=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			Logger.LogLocalEvent("dialing another lb (contactLBsToAnnounceSelf)")
 			conn, _ := rpc.Dial("tcp", LBServers[i].Address)
@@ -505,7 +505,7 @@ func initializeLB() {
 	lbDesignation = -1
 
 	//check if designation already used
-	for i:=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		//dial and check for err
 		Logger.LogLocalEvent("dialing another lb (initializeLB)")
 		_, err := rpc.Dial("tcp", LBServers[i].Address)
@@ -539,7 +539,7 @@ func initializeLB() {
 //	currently online.
 //
 func updateClientDataToAllLBs(c *ClientItem) {
-	for i:=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		println("I: ", i)
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			println("updating client data on: ", i)
@@ -570,7 +570,7 @@ func updateClientDataToAllLBs(c *ClientItem) {
 //	Sends the ClientItem specified to all of the online loadbalancers
 //
 func sendClientDataToAllLBs(c *ClientItem) {
-	for i:=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		println("I: ", i)
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			println("Sending client to: ", i)
@@ -758,7 +758,7 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 	var replyFromNode NodeListReply
 
 	//iterate through all loadbalancers and alert them to the new node
-	for i:=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			Logger.LogLocalEvent("dialing another lb (alertAllLoabBalancers)")
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
@@ -1124,7 +1124,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	//check username, if taken reply username taken
 	//else dial rpc
 	if authenticationFailure(message.Username, message.Password, message.RpcAddress) {
-		
+
 		reply.Message = "USERNAME-TAKEN"
 		Logger.LogLocalEvent("client unsuccessful in joining chat service")
 
@@ -1164,10 +1164,11 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
 		println(rpcUpdateMessage.ServerRpcAddress)
 
-		Logger.LogLocalEvent("update client rpc ChatServer")
+		Logger.LogLocalEvent("update client rpc chat server")
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
+			Logger.LogLocalEvent("unable to update client rpc chat server")
 			return nil
 		}
 
@@ -1183,8 +1184,10 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 //	This returns the list of all availible files to a client
 //
 func (msgSvc *MessageService) GetFileList(message *string, reply *([]string)) error {
+	Logger.LogLocalEvent("file list requested")
 	filesCond.L.Lock()
 	(*reply) = globalFileList
 	filesCond.L.Unlock()
+	Logger.LogLocalEvent("returned file list")
 	return nil
 }

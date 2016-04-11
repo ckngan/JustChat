@@ -360,7 +360,6 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 	}
 
 	return nil
-
 }
 
 //***********************Load Balancer RPC METHODS **********************************************//
