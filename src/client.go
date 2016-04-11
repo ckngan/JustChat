@@ -231,8 +231,6 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 			break
 		}
 
-		Logger.LogLocalEvent("dialing updated chat server")
-
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
 			fmt.Print(NewRpcChatServer)
@@ -273,7 +271,6 @@ func startupChatConnection() {
 	// Connecting to a LoadBalancer
 	i := 0
 	for ; i < len(loadBalancers); i++ {
-		Logger.LogLocalEvent("dialing a loadbalancer")
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
 		if err == nil {
 			// Welcome
@@ -480,7 +477,6 @@ func sendPrivateFile(user string, filepath string) {
 	sendCond.L.Unlock()
 
 	Logger.LogLocalEvent("private client addr rcvd")
-	Logger.LogLocalEvent("dialing private client")
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -530,7 +526,6 @@ func sendPrivateMessage(user string, message string) {
 	sendCond.L.Unlock()
 
 	Logger.LogLocalEvent("private client addr rcvd")
-	Logger.LogLocalEvent("dialing private client")
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -741,7 +736,6 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(conn)
-			Logger.LogLocalEvent("client rpc connection started")
 			// Accept call from loadbalancer/server/client
 		}
 	}()

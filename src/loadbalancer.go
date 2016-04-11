@@ -229,7 +229,6 @@ func main() {
 			}
 			go rpc.ServeConn(clientConnection)
 			Logger.LogLocalEvent("accepted client call")
-			println("Accepted Call from " + clientConnection.RemoteAddr().String())
 		}
 	}()
 
@@ -245,7 +244,6 @@ func main() {
 			}
 
 			go rpc.ServeConn(loadBalanceConnection)
-			Logger.LogLocalEvent("established connection with another loadbalancer")
 			println("Accepted LoadBalancer Call from: " + loadBalanceConnection.RemoteAddr().String())
 		}
 	}()
@@ -383,7 +381,6 @@ func giveClientNewServer(serverAddr string) {
 				nodeConditional.L.Unlock()
 				nodeConditional.Signal()
 
-				Logger.LogLocalEvent("dialing client")
 				clientConn, err := rpc.Dial("tcp", val)
 				if err != nil {
 					println("Error changing messaging server. Client doesn't have good node")
@@ -435,7 +432,6 @@ func addLBToActiveList(i int) {
 func contactLBsToAnnounceSelf() {
 	for i := 0; i < 3; i++ {
 		if LBServers[i].Status == "online" && i != lbDesignation {
-			Logger.LogLocalEvent("dialing another lb (contactLBsToAnnounceSelf)")
 			conn, _ := rpc.Dial("tcp", LBServers[i].Address)
 			var rpcUpdateMessage LBMessage
 			var lbReply LBDataReply
@@ -470,7 +466,6 @@ func getInfoFromFirstLB() {
 		return
 	}
 
-	Logger.LogLocalEvent("dialing another lb (getInfoFromFirstLB)")
 	conn, err := rpc.Dial("tcp", LBServers[i].Address)
 	if err != nil {
 		println("Error: ", err.Error())
@@ -507,7 +502,6 @@ func initializeLB() {
 	//check if designation already used
 	for i := 0; i < 3; i++ {
 		//dial and check for err
-		Logger.LogLocalEvent("dialing another lb (initializeLB)")
 		_, err := rpc.Dial("tcp", LBServers[i].Address)
 
 		if (err != nil) && (lbDesignation == -1) {
@@ -544,7 +538,6 @@ func updateClientDataToAllLBs(c *ClientItem) {
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			println("updating client data on: ", i)
 
-			Logger.LogLocalEvent("dialing another lb (updateClientDataToAllLBs)")
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
 			if err != nil {
 				println("Error: ", err.Error())
@@ -575,7 +568,6 @@ func sendClientDataToAllLBs(c *ClientItem) {
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			println("Sending client to: ", i)
 
-			Logger.LogLocalEvent("dialing another lb (sendClientDataToAllLBs)")
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
 			if err != nil {
 				println("Error: ", err.Error())
@@ -760,7 +752,6 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 	//iterate through all loadbalancers and alert them to the new node
 	for i := 0; i < 3; i++ {
 		if LBServers[i].Status == "online" && i != lbDesignation {
-			Logger.LogLocalEvent("dialing another lb (alertAllLoabBalancers)")
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
 			if err == nil {
 				Logger.LogLocalEvent("new server alert for lb")
@@ -784,7 +775,6 @@ func allertAllNodes(newNode *ServerItem) {
 	//dial all active nodes and alert them of the new node in the system
 	next := serverList
 	for next != nil {
-		Logger.LogLocalEvent("dialing server (allertAllNodes)")
 		conn, err := rpc.Dial("tcp", next.RPC_SERVER_IPPORT)
 		if err != nil {
 			println("Error dialing node w/UDP info of: ", next.UDP_IPPORT)
@@ -905,7 +895,6 @@ func notifyServersOfNewNode(newNode NewNodeSetup) {
 	next := serverList
 
 	for next != nil {
-		Logger.LogLocalEvent("dialing server (notifyServersOfNewNode)")
 		systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 		//checkError(err)
 		if err != nil {
@@ -1034,6 +1023,7 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
 	filesCond.L.Lock()
 	globalFileList = append(globalFileList, *filename)
+	Logger.LogLocalEvent("new file added to file list")
 	filesCond.L.Unlock()
 	(*reply) = "SUCCESS"
 	return nil
@@ -1129,7 +1119,6 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		Logger.LogLocalEvent("client unsuccessful in joining chat service")
 
 	} else {
-		Logger.LogLocalEvent("dialing client (JoinChatService)")
 
 		clientConn, err := rpc.Dial("tcp", message.RpcAddress)
 

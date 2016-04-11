@@ -152,8 +152,8 @@ var Logger *govec.GoLog // GoVector log
  */
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
 	println("A new server node has joined the system")
-	Logger.LogLocalEvent("new server node acknowledged")
 	addNode(args.UDP_IPPORT, args.RPC_CLIENT_IPPORT, args.RPC_SERVER_IPPORT)
+	Logger.LogLocalEvent("new server node acknowledged")
 	reply.Message = "success"
 	return nil
 }
@@ -163,7 +163,7 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
  */
 func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
 	historyMutex.Lock()
-	Logger.LogLocalEvent("received new public message")
+	Logger.LogLocalEvent("received new public message (server)")
 
 	inClockedMsg := ClockedClientMsg{
 		ClientMsg: args.ClientMsg,
@@ -210,7 +210,6 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
  */
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("Storing A File...")
-	Logger.LogLocalEvent("storing a file")
 
 	file := FileData{
 		Username: args.Username,
@@ -219,6 +218,7 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 		Data:     args.Data}
 	storeFile(file)
 
+	Logger.LogLocalEvent("file is stored")
 	reply.Message = "success"
 	return nil
 }
@@ -301,12 +301,12 @@ func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBRe
 //**************************************************************************
 
 /*
-* method for joining the storage node
+* method for joining the server
  */
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
-
 	println("A client has joined the server.")
 	addClient(message.Username, message.RPC_IPPORT)
+	Logger.LogLocalEvent("client has joined server")
 	reply.Message = "success"
 	return nil
 }
@@ -316,6 +316,7 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
  */
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	historyMutex.Lock()
+	Logger.LogLocalEvent("received new public message (client)")
 
 	message := ClientMessage{
 		Username: args.Username,
@@ -367,11 +368,13 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	}()
 
 	storeFile(file)
+	Logger.LogLocalEvent("received new file")
 
 	//Send LB Filename to LB
 	var rep string
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
+	Logger.LogLocalEvent("notify lb of new file")
 	err = systemService.Call("NodeService.NewFile", args.FileName, &rep)
 	checkError(err)
 	println(rep)
@@ -387,11 +390,13 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
  */
 func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) error {
 	println("username requested: " + args.Username)
+	Logger.LogLocalEvent("received client info request")
 	//find requested user's IP and send it back
 	rep := getAddr(args.Username)
 	reply.Username = args.Username
 	fmt.Println("REQUESTED RPC,", rep)
 	reply.RPC_IPPORT = rep
+	Logger.LogLocalEvent("sending requested client info")
 
 	return nil
 }
@@ -400,6 +405,7 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 *Method to retrieve a file with the given name from the connected servers
  */
 func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
+	Logger.LogLocalEvent("received file request")
 
 	serverListMutex.Lock()
 	next := serverList
@@ -408,7 +414,6 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 	for next != nil {
 
 		if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
-
 			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 			//checkError(err)
 			if err != nil {
@@ -416,6 +421,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 				reply.Username = "404"
 			} else {
 				var rep FileData
+				Logger.LogLocalEvent("requesting a file")
 				err = systemService.Call("NodeService.GetFile", *filename, &rep)
 				checkError(err)
 				if err == nil && rep.Username != "404" {
@@ -424,6 +430,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 					reply.FileName = rep.FileName
 					reply.FileSize = rep.FileSize
 					reply.Data = rep.Data
+					Logger.LogLocalEvent("sending file to client")
 					break
 				} else {
 					reply.Username = "404"
@@ -437,6 +444,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 				reply.FileName = resp.FileName
 				reply.FileSize = resp.FileSize
 				reply.Data = resp.Data
+				Logger.LogLocalEvent("sending file to client")
 				break
 			} else {
 				reply.Username = "404"
@@ -478,8 +486,8 @@ func main() {
 	numMsgsRcvd = 0
 
 	// Create log
-	Logger = govec.InitializeMutipleExecutions("server "+RECEIVE_PING_ADDR, "sys")
-	Logger.LogThis("server was initialized", "server "+RECEIVE_PING_ADDR, "{\"server "+RECEIVE_PING_ADDR+"\":1}")
+	Logger = govec.InitializeMutipleExecutions("server"+RECEIVE_PING_ADDR, "sys")
+	Logger.LogThis("server was initialized", "server"+RECEIVE_PING_ADDR, "{\"server"+RECEIVE_PING_ADDR+"\":1}")
 
 	////////////////////////////////////////////////////////////////////////////////////////
 
@@ -731,7 +739,6 @@ func systemListenServe(local string, c chan int) {
 	for {
 		conn, _ := ll.Accept()
 		go rpc.ServeConn(conn)
-		Logger.LogLocalEvent("accepted server call")
 	}
 }
 
@@ -755,7 +762,6 @@ func clientListenServe(local string, ch chan int) {
 *  Join storage servers
  */
 func joinStorageServers() {
-	Logger.LogLocalEvent("dialing loadbalancer")
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
 
@@ -766,7 +772,7 @@ func joinStorageServers() {
 		RPC_SERVER_IPPORT: RPC_SYSTEM_IPPORT,
 		UDP_IPPORT:        RECEIVE_PING_ADDR}
 
-	Logger.LogLocalEvent("registering new node")
+	Logger.LogLocalEvent("register new node")
 	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
 	checkError(err)
 
@@ -784,7 +790,6 @@ func joinStorageServers() {
 	serverListMutex.Lock()
 	serverList = list
 	serverListMutex.Unlock()
-
 }
 
 /*
@@ -946,7 +951,6 @@ func sendPublicMsgServers(message ClientMessage) {
 		go func(next *ServerItem, clockedMsg ClockedClientMsg) {
 			defer wg.Done()
 			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
-				Logger.LogLocalEvent("dialing server")
 				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 				//checkError(err)
 				if err != nil {
@@ -989,7 +993,6 @@ func sendPublicMsgClients(message ClientMessage) {
 		go func(next *ClientItem, message ClientMessage) {
 			defer wg.Done()
 			if (*next).Username != message.Username {
-				Logger.LogLocalEvent("dialing client")
 				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 				//checkError(err)
 				if err != nil {
@@ -1046,7 +1049,6 @@ func sendPublicFileServers(file FileData) {
 		go func(next *ServerItem, file FileData) {
 			defer wg.Done()
 			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
-				Logger.LogLocalEvent("dialing server")
 				systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
 				//checkError(err)
 				if err != nil {
@@ -1085,7 +1087,6 @@ func sendPublicFileClients(file FileData) {
 		go func(next *ClientItem, file FileData) {
 			defer wg.Done()
 			if (*next).Username != file.Username {
-				Logger.LogLocalEvent("dialing client")
 				systemService, err := rpc.Dial("tcp", (*next).RPC_IPPORT)
 				//checkError(err)
 				if err != nil {
@@ -1171,7 +1172,6 @@ func getIP() (ip string) {
 *gets the Addr of the user Username from the load balancer
  */
 func getAddr(uname string) string {
-	Logger.LogLocalEvent("dialing loadbalancer")
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
 
