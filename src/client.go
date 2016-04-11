@@ -121,6 +121,7 @@ var msgConditional *sync.Cond
 
 var sendMutex sync.Mutex
 var sendCond *sync.Cond
+
 var signup string
 var welcome string
 
@@ -142,7 +143,8 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Serv
 	messageOwner := editText(args.Username, Green, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner)
 	fmt.Println(output)
-	messageChannel <- output
+	//messageChannel <- output
+	//msgConditional.Signal()
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
 	Logger.LogLocalEvent("received file transfer")
 	return nil
@@ -237,16 +239,9 @@ func startupChatConnection() {
 			break
 		}
 	}
-
 	if i == 3 {
 		os.Exit(-1)
 	}
-
-	// Welcome
-	fmt.Println()
-	fmt.Println(editText(signup, Yellow, Intensity_1))
-	fmt.Println()
-
 	return
 }
 
@@ -392,14 +387,17 @@ func filterAndSendMessage(msg []string) {
 		if command == "commands" {
 			messageCommands()
 			return
+		} else if command == "available files" {
+			getFileList()
 		}
 	} else if len(msg) == 3 {
-
 		command = strings.TrimSpace(msg[1])
 		file := strings.TrimSpace(msg[2])
 
 		if command == "share" {
 			sendPublicFile(file)
+		} else if command == "get" {
+			getFile(file)
 		} else {
 			fmt.Println("Incorrect command!!!!!")
 			messageCommands()
@@ -601,6 +599,41 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 	}
 }
 
+func getFileList() {
+	var reply []string
+	err := loadBalancer.Call("MessageService.GetFileList", "", &reply)
+	if err != nil {
+		messageChannel <- "Error retrieving file list. Please try again."
+		msgConditional.Signal()
+	} else {
+		if len(reply) < 1 {
+			messageChannel <- "No new files to retrieve"
+			msgConditional.Signal()
+		} else {
+			for i, filename := range reply {
+				messageChannel <- editText("Available File "+strconv.Itoa(i+1)+":"+filename, Green, Intensity_1)
+				msgConditional.Signal()
+			}
+		}
+	}
+}
+
+func getFile(filename string) {
+	var reply FileData
+	err := chatServer.Call("MessageService.GetFile", filename, &reply)
+	if err != nil {
+		messageChannel <- "Error retrieving file. Please try again."
+		msgConditional.Signal()
+	} else {
+		if reply.Username == "404" {
+			messageChannel <- "File not found. Please try again."
+			msgConditional.Signal()
+		} else {
+			_ = handleFileTransfer(reply.FileName, reply.Username, reply.Data)
+		}
+	}
+}
+
 // Method to print messages to console in order of receipt
 func flushToConsole() {
 	for {
@@ -637,10 +670,18 @@ func messageCommands() {
 	commands := editText("Commands", color1, Intensity_1)
 	message4 := editText("#commands", color2, Intensity_2)
 
+	files := editText("Available Files", color1, Intensity_1)
+	message5 := editText("#available files", color2, Intensity_2)
+
+	getFile := editText("Get File", color1, Intensity_1)
+	message6 := editText("#get #filename", color2, Intensity_2)
+
 	fmt.Printf(editText("<----------------------- JustChat Commands ----------------------->\n", color2, Intensity_1))
 	fmt.Printf("%s ==> %2s\n", privateMessage1, message1)
 	fmt.Printf("   %s ==> %2s\n", privateMessage2, message2)
 	fmt.Printf("    %s ==> %2s\n", publicMessage1, message3)
+	fmt.Printf("%s ==> %2s\n", files, message5)
+	fmt.Printf("       %s ==> %2s\n", getFile, message6)
 	fmt.Printf("       %s ==> %2s\n", commands, message4)
 	fmt.Printf(editText("<----------------------------------------------------------------->\n\n", color2, Intensity_1))
 	fmt.Printf(editText("<--------------------------Start Chatting------------------------->\n", Magenta, Intensity_1))

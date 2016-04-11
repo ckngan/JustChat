@@ -1,5 +1,11 @@
 package main
 
+//**************************************************************************
+//
+//                           IMPORT STATEMENT
+//
+//**************************************************************************
+
 import (
 	"errors"
 	"fmt"
@@ -7,15 +13,19 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	//"strconv"
 	"sync"
 	"time"
 
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
-/* ---------------DECLARED TYPES-------------*/
-//RPC Values
+//**************************************************************************
+//
+//                  DECLARED TYPES AND GLOBAL VARIABLES
+//
+//**************************************************************************
+
+//RPC Service Values
 type MessageService int
 type NodeService int
 type LBService int
@@ -29,6 +39,7 @@ type ClientItem struct {
 	NextClient    *ClientItem
 }
 
+//Server Object
 type ServerItem struct {
 	UDP_IPPORT        string
 	RPC_SERVER_IPPORT string
@@ -37,18 +48,16 @@ type ServerItem struct {
 	NextServer        *ServerItem
 }
 
+//LoadBalancer Object
 type LoadBalancer struct {
 	Address string
 	Status  string
 }
 
-type HeartBeatItem struct {
-	Node      *ServerItem
-	NumMissed int
-	Next      *HeartBeatItem
-}
+//
+//    RPC MESSAGE TYPES
+//
 
-/* ---------------MESSAGE TYPES-------------*/
 // Struct to join chat service
 type NewClientSetup struct {
 	Username   string
@@ -108,11 +117,13 @@ type ClientRequest struct {
 	Username string
 }
 
-/* ---------------GLOBAL VARIABLES-------------*/
-// Net Info of this server
+//
+//    GLOBAL VARIABLES
+//
+
+//Net Info of this server
 var clientConnAddress string
 var nodeConnAdress string
-var heartbeatAddr string
 var lbDesignation int
 
 // List of All LoadBalancer Servers
@@ -121,7 +132,7 @@ var LBServers []LoadBalancer
 // Lists
 var clientList *ClientItem
 var serverList *ServerItem
-var heartsToCheck *HeartBeatItem
+var globalFileList []string
 
 // List of locks
 var serverListMutex sync.Mutex
@@ -130,26 +141,37 @@ var nodeConditional *sync.Cond
 var clientListMutex sync.Mutex
 var clientConditional *sync.Cond
 
+var fileListMutex sync.Mutex
+var filesCond *sync.Cond
+
 // GoVector log
 var Logger *govec.GoLog
 var lbId string
 
+//**************************************************************************
+//
+//                             MAIN METHOD
+//
+//**************************************************************************
+
 func main() {
 
 	// Parse arguments
-	usage := fmt.Sprintf("Usage: %s [client ip:port1] [server ip:port2] [heartbeat ip:port3] \n", os.Args[0])
-	if len(os.Args) != 4 {
+	usage := fmt.Sprintf("Usage: %s [client ip:port1] [server ip:port2] \n", os.Args[0])
+	if len(os.Args) != 3 {
 		fmt.Printf(usage)
 		os.Exit(1)
 	}
 
+	//assign argument values to global variables
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
-	heartbeatAddr = os.Args[3]
 
 	LBServers = []LoadBalancer{LoadBalancer{"127.0.0.1:10001", "offline"},
 		LoadBalancer{"127.0.0.1:10002", "offline"},
 		LoadBalancer{"127.0.0.1:10003", "offline"}}
+
+	globalFileList = []string{}
 
 	////Print out address information
 	ip := GetLocalIP()
@@ -176,6 +198,9 @@ func main() {
 	clientListMutex = sync.Mutex{}
 	clientConditional = sync.NewCond(&clientListMutex)
 
+	fileListMutex = sync.Mutex{}
+	filesCond = sync.NewCond(&fileListMutex)
+
 	//Initialize Clientlist and serverlist
 	clientList = nil
 	serverList = nil
@@ -190,12 +215,11 @@ func main() {
 	clientService := new(MessageService)
 	rpc.Register(clientService)
 
+	//Listener go function for clients
 	rpcListener, err := net.Listen("tcp", clientConnAddress)
 	if err != nil {
 		log.Fatal("listen error:", err)
 	}
-
-	//Listener go function for clients
 	go func() {
 		for {
 			println("Waiting for Client Calls")
@@ -244,9 +268,17 @@ func main() {
 	}
 }
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	      LOCAL HELPER FUNCTIONS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+//**************************************************************************
+//
+//                        LOCAL HELPER FUNCTIONS
+//
+//**************************************************************************
+
+//	~~~deleteNodeFromList~~~
+//
+//	Removes a ServerItem from serverList if it's UDP_IPPORT
+//	matches the udpAddr argument
+//
 func deleteNodeFromList(udpAddr string) {
 	//As every node is unique in its UDP address we can assume deletion after we find that address
 	//and return right away
@@ -283,6 +315,14 @@ func deleteNodeFromList(udpAddr string) {
 	return
 }
 
+//	~~~heartbeetCheck~~~
+//
+//	Checks every 20 milliseconds to see if any message servers
+//	have died by attempting to dial their RPC listening port
+//
+//	If they have been declared dead, all clients on that message
+//	server are told to use a different one
+//
 func heartbeetCheck() {
 	for {
 		time.Sleep(20 * time.Millisecond)
@@ -314,6 +354,11 @@ func heartbeetCheck() {
 	}
 }
 
+//	~~~giveClientNewServer~~~
+//
+//	Every client whose CurrentServer value matches the serverAddr
+//	argument will be told to use a different message server
+//
 func giveClientNewServer(serverAddr string) {
 	println("Giving new server")
 	i := clientList
@@ -372,10 +417,21 @@ func giveClientNewServer(serverAddr string) {
 	return
 }
 
+//	~~~addLBToActiveList~~~
+//
+//	This method will set a load balancer with the value i to be
+//	"online"
+//
 func addLBToActiveList(i int) {
 	LBServers[i].Status = "online"
+	return
 }
 
+//	~~~contactLBsToAnnounceSelf~~~
+//
+//	This method alerts all other online LoadBalancers that this load
+//	balancer is now online.
+//
 func contactLBsToAnnounceSelf() {
 	for i:=0; i < 3; i++ {
 		if LBServers[i].Status == "online" && i != lbDesignation {
@@ -393,6 +449,13 @@ func contactLBsToAnnounceSelf() {
 	}
 }
 
+//	~~~getInfoFromFirstLB~~~
+//
+//	This method will find the first "online" load balancer and get the most
+//	up to date client list and server list
+//
+//	If this is the first load balancer to start, no data is retrieved
+//
 func getInfoFromFirstLB() {
 	var i = 0
 	for i < 3 {
@@ -431,6 +494,13 @@ func getInfoFromFirstLB() {
 	return
 }
 
+//	~~~initializeLB~~~
+//
+//	This method is called at startup to prepare this load balancer for use
+//
+//	If there are already 3 load balancers online, then this one will shut down
+
+//
 func initializeLB() {
 	lbDesignation = -1
 
@@ -463,6 +533,11 @@ func initializeLB() {
 	return
 }
 
+//	~~~updateClientDataToAllLBs~~~
+//
+//	Updates the client data upon client reconnect to all load balancers
+//	currently online.
+//
 func updateClientDataToAllLBs(c *ClientItem) {
 	for i:=0; i < 3; i++ {
 		println("I: ", i)
@@ -490,6 +565,10 @@ func updateClientDataToAllLBs(c *ClientItem) {
 	return
 }
 
+//	~~~sendClientDataToAllLBs~~~
+//
+//	Sends the ClientItem specified to all of the online loadbalancers
+//
 func sendClientDataToAllLBs(c *ClientItem) {
 	for i:=0; i < 3; i++ {
 		println("I: ", i)
@@ -517,6 +596,10 @@ func sendClientDataToAllLBs(c *ClientItem) {
 	return
 }
 
+//	~~~addClientToList~~~
+//
+//	Creats a new ClientItem object and adds it to the clientList
+//
 func addClientToList(username string, password string, addr string) {
 
 	newClient := &ClientItem{username, password, "CurrentServer", addr, nil}
@@ -534,7 +617,11 @@ func addClientToList(username string, password string, addr string) {
 	return
 }
 
-//return selectedServer, error
+//	~~~getServerForCLient~~~
+//
+//	Returns the message server for the client with the fewest connected clients
+//	and increments the number of connected clients on that server by 1
+//
 func getServerForCLient() (*ServerItem, error) {
 	//get the server with fewest clients connected to it
 	next := serverList
@@ -553,12 +640,21 @@ func getServerForCLient() (*ServerItem, error) {
 	}
 
 	if lowestNumberServer != nil {
+		lowestNumberServer.Clients++
 		return lowestNumberServer, nil
 	} else {
 		return nil, errors.New("No Connected Servers")
 	}
 }
 
+//	~~~authenticationFailure~~~
+//
+//	Checks to see if the username and password are correct. If the username hasn't
+//	been used before then a new ClientItem is created and added to the list and
+//	false is returned.
+//
+//	If the username has been used and the password is not correct then true is returned
+//
 func authenticationFailure(username string, password string, pubAddr string) bool {
 
 	next := clientList
@@ -587,7 +683,12 @@ func authenticationFailure(username string, password string, pubAddr string) boo
 	return false
 }
 
-// Method to update a clients' RPC info upon rejoining
+//	~~~updateClientInfo~~~
+//
+//	Compares the username in the newClient to that of all ClientItems in the
+//	clientList and will update the client in the clientList with the information
+//	if there is a match
+//
 func updateClientInfo(newClient *ClientItem) {
 	next := clientList
 
@@ -601,6 +702,10 @@ func updateClientInfo(newClient *ClientItem) {
 	return
 }
 
+//	~~~addClient~~~
+//
+//	Adds the newClient as specified in the argument to the front of the clientList
+//
 func addClient(newClient *ClientItem) {
 	if clientList == nil {
 		clientList = newClient
@@ -610,16 +715,14 @@ func addClient(newClient *ClientItem) {
 	}
 }
 
+//	~~~addNode~~~
+//
+//	Addes a new message server to the serverList by creating a ServerItem with
+//	the information specified in the arguments
+//
 func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
-
-	//TODO: need restart implementation
+	//create the ServerItem object
 	newNode := &ServerItem{udp, clientRPC, serverRPC, 0, nil}
-
-	println("\n\nNew Node\n-------------")
-	println(newNode.UDP_IPPORT)
-	println(newNode.RPC_SERVER_IPPORT)
-	println(newNode.RPC_CLIENT_IPPORT)
-	println(newNode.Clients)
 
 	if serverList == nil {
 		serverList = newNode
@@ -638,6 +741,14 @@ func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
 	return
 }
 
+//	~~~alertAllLoabBalancers~~~
+//
+//	Iterate through all online load balancers and alert them to the presence of a new
+//	message server
+//
+//	This also checks to see if a load balancer has gone offline and sets it to "offline"
+//	as needed
+//
 func alertAllLoabBalancers(newNode *ServerItem) {
 	var nodeSetupMessage NewNodeSetup
 	nodeSetupMessage.RPC_CLIENT_IPPORT = newNode.RPC_CLIENT_IPPORT
@@ -664,6 +775,11 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 
 }
 
+//	~~~allertAllNodes~~~
+//
+//	Iterate through all message servers and alert them to the presence of a new
+//	message server
+//
 func allertAllNodes(newNode *ServerItem) {
 	//dial all active nodes and alert them of the new node in the system
 	next := serverList
@@ -693,6 +809,12 @@ func allertAllNodes(newNode *ServerItem) {
 	}
 }
 
+//	~~~isNewNode~~~
+//
+//	Check to see if a node with the UDP_IPPORT is already added to the serverList
+//	return false if it is
+//	return true if the node is new
+//
 func isNewNode(ident string) bool {
 	next := serverList
 
@@ -706,6 +828,10 @@ func isNewNode(ident string) bool {
 	return true
 }
 
+//	~~~addServerDataToClient~~~
+//
+//	Update the current server of the client to reflect the value of addrInfo
+//
 func addServerDataToClient(addrInfo string, clientUname string) {
 	i := clientList
 	for i != nil {
@@ -720,9 +846,98 @@ func addServerDataToClient(addrInfo string, clientUname string) {
 	return
 }
 
-/**************************************************
-	RPC METHODS FOR LOAD BALANCERS
-*****************************************************/
+//	~~~checkError~~~
+//
+//	Generic check for error that terminates execution
+//
+func checkError(err error) {
+	if err != nil {
+		log.Fatal(os.Stderr, "Error ", err.Error())
+		os.Exit(1)
+	}
+}
+
+//	~~~GetLocalIP~~~
+//
+//	Get this load balancer's IP address
+//
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
+}
+
+//	~~~printOutAllClients~~~
+//
+//	Print the current list of clients to console
+//
+func printOutAllClients() {
+	//print list of clients
+	toPrint := clientList
+	println(" ")
+	println("List of Clients")
+	println("---------------")
+	for toPrint != nil {
+		fmt.Print((*toPrint).Username)
+		toPrint = (*toPrint).NextClient
+	}
+
+	return
+}
+
+//	~~~notifyServersOfNewNode~~~
+//
+//	Will iterate over the entire message server list and allert all message servers
+//	to the presence of a new message server.
+//
+func notifyServersOfNewNode(newNode NewNodeSetup) {
+
+	next := serverList
+
+	for next != nil {
+		Logger.LogLocalEvent("dialing server (notifyServersOfNewNode)")
+		systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+		//checkError(err)
+		if err != nil {
+			println("Notfifying nodes of new node: Node ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+			//it's dead but the ping will eventually take care of it
+		} else {
+			var reply ServerReply
+
+			Logger.LogLocalEvent("notification: new server node online")
+			err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
+			checkError(err)
+			if err == nil {
+				fmt.Println("we received a reply from the server: ", reply.Message)
+				Logger.LogLocalEvent("new server node notification successful")
+			}
+			systemService.Close()
+		}
+		next = (*next).NextServer
+	}
+}
+
+//**************************************************************************
+//
+//                     RPC METHODS FOR LOAD BALANCERS
+//
+//**************************************************************************
+
+//	~~~NewNode~~~
+//
+//	This method is called by another load balancer to alert this load balancer
+//	of the addition of a message server to the system.
+//
 func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	Logger.LogLocalEvent("received new load balancer")
 
@@ -737,6 +952,12 @@ func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) err
 	return nil
 }
 
+//	~~~UpdateClient~~~
+//
+//	This method updates the clientlist to reflect changes when a client reconnects
+//	with the same username and password. The message will contain the username of the client
+//	and the value that the RPCAddress should be updated to
+//
 func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply) error {
 	Logger.LogLocalEvent("received client update")
 
@@ -748,6 +969,12 @@ func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply
 	return nil
 }
 
+//	~~~NewClient~~~
+//
+//	This method is called by another load balancer to alert this load balancer
+//	of the addition of a client to the system.
+//
+//
 func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) error {
 	Logger.LogLocalEvent("received new client")
 
@@ -761,6 +988,12 @@ func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) e
 	return nil
 }
 
+//	~~~GetCurrentData~~~
+//
+//	This method alerts this load balancer that another one is online
+//	and replys back with the current list of clients and server nodes
+//	in the system
+//
 func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
 	Logger.LogLocalEvent("received request for current lb data")
 
@@ -788,12 +1021,31 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 	return nil
 }
 
-/*************************************
-	RPC METHODS FOR NODES
-***************************************/
+//**************************************************************************
+//
+//                           RPC METHODS FOR NODES
+//
+//**************************************************************************
 
-//Function a node will call when it comes online
-//add node to list on connection
+//	~~~NewFIle~~~
+//
+//	Will add the file to the list of globally availible files and return "SUCCESS" upon completion.
+//
+func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
+	filesCond.L.Lock()
+	globalFileList = append(globalFileList, *filename)
+	filesCond.L.Unlock()
+	(*reply) = "SUCCESS"
+	return nil
+}
+
+//	~~~NewNode~~~
+//
+//	The first call a new messaging server will make when it comes online. This method will
+//	add the messaging server to the list ofavailible servers and will signal to any waiting
+//	routines that there is a new server added. All loadbalancers are alerted to the additional
+//	messaging server.
+//
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	Logger.LogLocalEvent("received new node connection")
 
@@ -818,6 +1070,11 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 	return nil
 }
 
+//	~~~GetClientAddr~~~
+//
+//	Given the username of the client in a ClientRequest message, the loadbalancer will return
+//	the public address that RPC calls can be received on for that client.
+//
 func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerReply) error {
 	Logger.LogLocalEvent("received request for client address")
 
@@ -841,11 +1098,20 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 	return nil
 }
 
-/*****************************************
-	RPC METHODS FOR CLIENTS
-******************************************/
+//**************************************************************************
+//
+//                         RPC METHODS FOR CLIENTS
+//
+//**************************************************************************
 
-//Function for receiving a message from a client
+//	~~~JoinChatService~~~
+//
+//	This is the first method a client calls when it comes online. It will add
+//	the client to the list of clients after authenticating username and password.
+//	Then it will find a chat server to use and tell the client to connect to it.
+//
+//	Calls are made to other load balancers to alert them to the changes.
+//
 func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
 
 	// if user name not taken, server dials RPC address in message.RPCAddress
@@ -912,70 +1178,13 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 	return nil
 }
 
-/*******************************************
-	CHECK for ERRORS
-**********************************************/
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(os.Stderr, "Error ", err.Error())
-		os.Exit(1)
-	}
-}
-
-// GetLocalIP returns the non loopback local IP of the host
-func GetLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return ""
-	}
-	for _, address := range addrs {
-		// check the address type and if it is not a loopback the display it
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String()
-			}
-		}
-	}
-	return ""
-}
-
-func printOutAllClients() {
-	//print list of clients
-	toPrint := clientList
-	println(" ")
-	println("List of Clients")
-	println("---------------")
-	for toPrint != nil {
-		fmt.Print((*toPrint).Username)
-		toPrint = (*toPrint).NextClient
-	}
-
-	return
-}
-
-func notifyServersOfNewNode(newNode NewNodeSetup) {
-
-	next := serverList
-
-	for next != nil {
-		Logger.LogLocalEvent("dialing server (notifyServersOfNewNode)")
-		systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
-		//checkError(err)
-		if err != nil {
-			println("Notfifying nodes of new node: Node ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
-			//it's dead but the ping will eventually take care of it
-		} else {
-			var reply ServerReply
-
-			Logger.LogLocalEvent("notification: new server node online")
-			err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
-			checkError(err)
-			if err == nil {
-				fmt.Println("we received a reply from the server: ", reply.Message)
-				Logger.LogLocalEvent("new server node notification successful")
-			}
-			systemService.Close()
-		}
-		next = (*next).NextServer
-	}
+//	~~~NewFIle~~~
+//
+//	This returns the list of all availible files to a client
+//
+func (msgSvc *MessageService) GetFileList(message *string, reply *([]string)) error {
+	filesCond.L.Lock()
+	(*reply) = globalFileList
+	filesCond.L.Unlock()
+	return nil
 }

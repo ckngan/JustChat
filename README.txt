@@ -1,10 +1,9 @@
 Usage:
 
 Run loadbalancer first:
-go run loadbalancer.go [client ip:port1] [server ip:port2] [heartbeat ip:port3]
+go run loadbalancer.go [client ip:port1] [server ip:port2]
 - [client ip:port1] address on which loadbalancer receives new client connections
 - [server ip:port2] address on which loadbalancer receives new server connections
-- [heartbeat ip:port3] address on which loadbalancer checks for server aliveness
 
 Then server:
 go run server.go [loadbalancer ip:port1] [udp_ping ip:port2]
