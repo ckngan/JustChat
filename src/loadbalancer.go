@@ -228,7 +228,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(clientConnection)
-			Logger.LogLocalEvent("accepted client call")
+			println("Accepted Call from " + clientConnection.RemoteAddr().String())
 		}
 	}()
 
