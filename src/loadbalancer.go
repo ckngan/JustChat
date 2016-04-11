@@ -132,6 +132,7 @@ var LBServers []LoadBalancer
 //Lists
 var clientList *ClientItem
 var serverList *ServerItem
+var globalFileList []string
 
 //List of locks
 var serverListMutex sync.Mutex
@@ -139,6 +140,9 @@ var nodeConditional *sync.Cond
 
 var clientListMutex sync.Mutex
 var clientConditional *sync.Cond
+
+var fileListMutex sync.Mutex
+var filesCond *sync.Cond
 
 // GoVector log
 var Logger *govec.GoLog
@@ -166,6 +170,8 @@ func main() {
 		LoadBalancer{"127.0.0.1:10002", "offline"},
 		LoadBalancer{"127.0.0.1:10003", "offline"}}
 
+	globalFileList = []string{}
+
 	////Print out address information
 	ip := GetLocalIP()
 	// listen on first open port server finds
@@ -189,6 +195,9 @@ func main() {
 
 	clientListMutex = sync.Mutex{}
 	clientConditional = sync.NewCond(&clientListMutex)
+
+	fileListMutex = sync.Mutex{}
+	filesCond = sync.NewCond(&fileListMutex)
 
 	//Initialize Clientlist and serverlist
 	clientList = nil
@@ -443,6 +452,8 @@ func contactLBsToAnnounceSelf() {
 //
 //	This method will find the first "online" load balancer and get the most
 //	up to date client list and server list
+//	
+//	If this is the first load balancer to start, no data is retrieved
 //
 func getInfoFromFirstLB() {
 	var i = 0
@@ -990,8 +1001,12 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 //
 //	TODO
 //
+//	STUB
+//
 func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
-	// DO SHIT TO ADD TO A LIST
+	filesCond.L.Lock()
+	//globalFileList
+	filesCond.L.Unlock()
 	(*reply) = "SUCCESS"
 	return nil
 }
@@ -1115,5 +1130,16 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		reply.Message = "WELCOME"
 	}
 
+	return nil
+}
+
+//	~~~NewFIle~~~
+//
+//	TODO
+//
+func (msgSvc *MessageService) getFileList(reply *([]string)) error {
+	filesCond.L.Lock()
+	(*reply) = globalFileList
+	filesCond.L.Unlock()
 	return nil
 }
