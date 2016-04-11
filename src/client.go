@@ -131,9 +131,8 @@ type ClientMessageService int
 
 // Method for a client to call another client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
-
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
-	Logger.LogLocalEvent("received file transfer")
+	Logger.LogLocalEvent("received public file transfer")
 	return nil
 }
 
@@ -146,7 +145,7 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Serv
 	//messageChannel <- output
 	//msgConditional.Signal()
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
-	Logger.LogLocalEvent("received file transfer")
+	Logger.LogLocalEvent("received private file transfer")
 	return nil
 }
 
@@ -163,6 +162,9 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 			disconnectClient()
 			break
 		}
+
+		Logger.LogLocalEvent("dialing updated chat server")
+
 		chatConn, err := rpc.Dial("tcp", NewRpcChatServer)
 		if err != nil {
 			fmt.Print(NewRpcChatServer)
@@ -185,7 +187,8 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 	output := removeNewLine(messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
-	Logger.LogLocalEvent("client received global message")
+
+	Logger.LogLocalEvent("received public message")
 
 	reply.Message = ""
 	return nil
@@ -199,7 +202,9 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 	output := removeNewLine(privateFlag + messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
-	Logger.LogLocalEvent("client received private message")
+
+	Logger.LogLocalEvent("received private message")
+
 	reply.Message = "Received"
 	return nil
 }
@@ -217,7 +222,6 @@ func clientSetup() {
 
 	// main chat function
 	chat()
-
 }
 
 // Method to initiate server connection
@@ -226,9 +230,9 @@ func startupChatConnection() {
 	// Connecting to a LoadBalancer
 	i := 0
 	for ; i < len(loadBalancers); i++ {
+		Logger.LogLocalEvent("dialing a loadbalancer")
 		conn, err := rpc.Dial("tcp", loadBalancers[i])
 		if err == nil {
-			Logger.LogLocalEvent("connected to a loadBalancer")
 			// Welcome
 			fmt.Println()
 			fmt.Println(editText(signup, Yellow, Intensity_1))
@@ -259,11 +263,12 @@ func joinLoadBalancerServer() {
 		message.Password = pword
 		message.RpcAddress = clientRpcAddress
 
+		Logger.LogLocalEvent("attempt to join chat service")
 		err := loadBalancer.Call("MessageService.JoinChatService", message, &reply)
 		checkError(err)
 
 		serverMessage := reply.Message
-		Logger.LogLocalEvent("received message from server")
+		Logger.LogLocalEvent("received message from loadbalancer")
 
 		// Checking for welcome message
 		if serverMessage == "WELCOME" {
@@ -284,6 +289,7 @@ func initChatServerConnection() {
 	info.Username = username
 	info.RPC_IPPORT = clientRpcAddress
 
+	Logger.LogLocalEvent("initialize chat server connection")
 	err := chatServer.Call("MessageService.ConnectionInit", info, &reply)
 	checkError(err)
 }
@@ -369,11 +375,17 @@ func filterAndSendMessage(msg []string) {
 		sendMsg.Message = command
 		sendMsg.Username = username
 		sendCond.L.Lock()
+
+		Logger.LogLocalEvent("sending public message")
+
 		err := chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		for err != nil {
 			sendCond.Wait()
+			Logger.LogLocalEvent("sending public message again")
+
 			err = chatServer.Call("MessageService.SendPublicMsg", sendMsg, &reply)
 		}
+
 		sendCond.L.Unlock()
 
 	} else if len(msg) == 2 {
@@ -423,11 +435,17 @@ func sendPublicFile(filepath string) {
 	fileData, err := packageFile(filepath)
 	if err == nil {
 		sendCond.L.Lock()
+
+		Logger.LogLocalEvent("sending public file")
+
 		err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
 		for err != nil {
 			sendCond.Wait()
+			Logger.LogLocalEvent("sending public file again")
+
 			err = chatServer.Call("MessageService.SendPublicFile", fileData, &reply)
 		}
+
 		sendCond.L.Unlock()
 	} else {
 		messageChannel <- "Please check filepath"
@@ -467,12 +485,18 @@ func sendPrivateFile(user string, filepath string) {
 
 	request.Username = user
 	sendCond.L.Lock()
+	Logger.LogLocalEvent("request private client addr")
+
 	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
 	for err != nil {
 		sendCond.Wait()
+		Logger.LogLocalEvent("request private client addr again")
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
 	sendCond.L.Unlock()
+
+	Logger.LogLocalEvent("private client addr rcvd")
+	Logger.LogLocalEvent("dialing private client")
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -487,6 +511,8 @@ func sendPrivateFile(user string, filepath string) {
 			msgConditional.Signal()
 			return
 		}
+
+		Logger.LogLocalEvent("sending private file")
 		err = privateClient.Call("ClientMessageService.TransferFilePrivate", fileData, &reply)
 		if err != nil {
 			messageChannel <- "Error transfering file to " + user + ". Please try again!"
@@ -506,12 +532,18 @@ func sendPrivateMessage(user string, message string) {
 
 	request.Username = user
 	sendCond.L.Lock()
+
+	Logger.LogLocalEvent("request private client addr")
 	err := chatServer.Call("MessageService.SendPrivate", request, &reply)
 	for err != nil {
 		sendCond.Wait()
+		Logger.LogLocalEvent("request private client addr again")
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
 	sendCond.L.Unlock()
+
+	Logger.LogLocalEvent("private client addr rcvd")
+	Logger.LogLocalEvent("dialing private client")
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -524,6 +556,7 @@ func sendPrivateMessage(user string, message string) {
 		clientMessage.Username = username
 		clientMessage.Message = message
 
+		Logger.LogLocalEvent("sending private message")
 		err = privateClient.Call("ClientMessageService.ReceivePrivateMessage", clientMessage, &reply)
 		if err != nil {
 			messageChannel <- "Error sending private message to " + user + ". Please try again!"
@@ -533,7 +566,7 @@ func sendPrivateMessage(user string, message string) {
 		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your private message."
 		msgConditional.Signal()
 	}
-	// reply should be IP port of the
+	// reply should be IP port of the ...
 	return
 }
 
@@ -593,15 +626,18 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 
 func getFileList() {
 	var reply []string
+	Logger.LogLocalEvent("request for file list")
 	err := loadBalancer.Call("MessageService.GetFileList", "", &reply)
 	if err != nil {
 		messageChannel <- "Error retrieving file list. Please try again."
 		msgConditional.Signal()
 	} else {
 		if len(reply) < 1 {
+			Logger.LogLocalEvent("received file list")
 			messageChannel <- "No new files to retrieve"
 			msgConditional.Signal()
 		} else {
+			Logger.LogLocalEvent("received file list")
 			for i, filename := range reply {
 				messageChannel <- editText("Available File "+strconv.Itoa(i+1)+":"+filename, Green, Intensity_1)
 				msgConditional.Signal()
@@ -612,6 +648,7 @@ func getFileList() {
 
 func getFile(filename string) {
 	var reply FileData
+	Logger.LogLocalEvent("made file request")
 	err := chatServer.Call("MessageService.GetFile", filename, &reply)
 	if err != nil {
 		messageChannel <- "Error retrieving file. Please try again."
@@ -622,6 +659,7 @@ func getFile(filename string) {
 			msgConditional.Signal()
 		} else {
 			_ = handleFileTransfer(reply.FileName, reply.Username, reply.Data)
+			Logger.LogLocalEvent("file received")
 		}
 	}
 }
@@ -790,7 +828,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(conn)
-			Logger.LogLocalEvent("rpc connection started")
+			Logger.LogLocalEvent("client rpc connection started")
 			// Accept call from loadbalancer/server/client
 		}
 	}()
