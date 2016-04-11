@@ -1,10 +1,10 @@
 package main
 
-//**************************************************************
+//**************************************************************************
 //
-//                       IMPORT STATEMENT
+//                           IMPORT STATEMENT
 //
-//**************************************************************
+//**************************************************************************
 
 import (
 	"errors"
@@ -19,11 +19,11 @@ import (
 	"github.com/arcaneiceman/GoVector/govec"
 )
 
-//**************************************************************
+//**************************************************************************
 //
-//             DECLARED TYPES AND GLOBAL VARIABLES
+//                  DECLARED TYPES AND GLOBAL VARIABLES
 //
-//**************************************************************
+//**************************************************************************
 
 //RPC Service Values
 type MessageService int
@@ -147,12 +147,11 @@ var filesCond *sync.Cond
 // GoVector log
 var Logger *govec.GoLog
 
-
-//**************************************************************
+//**************************************************************************
 //
-//                       MAIN METHOD
+//                             MAIN METHOD
 //
-//**************************************************************
+//**************************************************************************
 
 func main() {
 
@@ -266,11 +265,11 @@ func main() {
 	}
 }
 
-//**************************************************************
+//**************************************************************************
 //
-//                   LOCAL HELPER FUNCTIONS
+//                        LOCAL HELPER FUNCTIONS
 //
-//**************************************************************
+//**************************************************************************
 
 //	~~~deleteNodeFromList~~~
 //
@@ -452,7 +451,7 @@ func contactLBsToAnnounceSelf() {
 //
 //	This method will find the first "online" load balancer and get the most
 //	up to date client list and server list
-//	
+//
 //	If this is the first load balancer to start, no data is retrieved
 //
 func getInfoFromFirstLB() {
@@ -682,7 +681,7 @@ func authenticationFailure(username string, password string, pubAddr string) boo
 
 //	~~~updateClientInfo~~~
 //
-//	Compares the username in the newClient to that of all ClientItems in the 
+//	Compares the username in the newClient to that of all ClientItems in the
 //	clientList and will update the client in the clientList with the information
 //	if there is a match
 //
@@ -920,11 +919,11 @@ func notifyServersOfNewNode(newNode NewNodeSetup) {
 	}
 }
 
-//**************************************************************
+//**************************************************************************
 //
-//               RPC METHODS FOR LOAD BALANCERS
+//                     RPC METHODS FOR LOAD BALANCERS
 //
-//**************************************************************
+//**************************************************************************
 
 //	~~~NewNode~~~
 //
@@ -963,7 +962,7 @@ func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply
 //
 //	This method is called by another load balancer to alert this load balancer
 //	of the addition of a client to the system.
-//	
+//
 //
 func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) error {
 	clientConditional.L.Lock()
@@ -1007,11 +1006,11 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 	return nil
 }
 
-//**************************************************************
+//**************************************************************************
 //
-//                   RPC METHODS FOR NODES
+//                           RPC METHODS FOR NODES
 //
-//**************************************************************
+//**************************************************************************
 
 //	~~~NewFIle~~~
 //
@@ -1082,18 +1081,18 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 	return nil
 }
 
-//**************************************************************
+//**************************************************************************
 //
-//               RPC METHODS FOR CLIENTS
+//                         RPC METHODS FOR CLIENTS
 //
-//**************************************************************
+//**************************************************************************
 
 //	~~~JoinChatService~~~
 //
 //	This is the first method a client calls when it comes online. It will add
 //	the client to the list of clients after authenticating username and password.
 //	Then it will find a chat server to use and tell the client to connect to it.
-//	
+//
 //	Calls are made to other load balancers to alert them to the changes.
 //
 func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
