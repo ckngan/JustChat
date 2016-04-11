@@ -494,6 +494,7 @@ func getInfoFromFirstLB() {
 //	This method is called at startup to prepare this load balancer for use
 //
 //	If there are already 3 load balancers online, then this one will shut down
+
 //
 func initializeLB() {
 	lbDesignation = -1
