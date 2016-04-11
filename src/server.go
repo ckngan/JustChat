@@ -632,7 +632,7 @@ func initPingServers(LocalAddr *net.UDPAddr) {
 			next = (*next).NextServer
 		}
 
-		timer1 := time.NewTimer(time.Second * 15)
+		timer1 := time.NewTimer(time.Second * 1)
 		<-timer1.C
 	}
 }
