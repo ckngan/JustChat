@@ -233,7 +233,7 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 // method for public message transfer
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	historyMutex.Lock()
-	println("Message received.")
+	println("Message from client received: ", args.Message)
 
 	message := ClientMessage{
 		Username: args.Username,
@@ -281,16 +281,16 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 		defer hinder.Done()
 		sendPublicFileClients(file)
 	}()
-
-	storeFile(file)
+	//TODO: UNCOMMENT THIS!!!!!! It is commented out for testning
+	//storeFile(file)
 
 	//Send LB Filename to LB
-	var rep ServerReply
+	var rep string
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
 	err = systemService.Call("NodeService.NewFile", args.FileName, &rep)
 	checkError(err)
-	println(rep.Message)
+	println(rep)
 	systemService.Close()
 
 	hinder.Wait()
@@ -406,7 +406,7 @@ func main() {
 	numMsgsRcvd = 0
 
 	// LOAD BALANCER tcp.rpc
-	ip := getIP()
+	ip := "localhost"//getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
@@ -876,7 +876,7 @@ func sendPublicMsgServers(message ClientMessage) {
 }
 
 func sendPublicMsgClients(message ClientMessage) {
-	println("inside sendPublicMsgClients")
+	println("inside sendPublicMsgClients: ", message.Message)
 	clientListMutex.Lock()
 	next := clientList
 	size := sizeOfClientList()
@@ -927,6 +927,7 @@ func storeFile(file FileData) {
 }
 
 func sendPublicFileServers(file FileData) {
+	println("inside send public msg servers")
 	serverListMutex.Lock()
 	next := serverList
 	size := sizeOfServerList()
@@ -963,6 +964,7 @@ func sendPublicFileServers(file FileData) {
 }
 
 func sendPublicFileClients(file FileData) {
+	println("inside sendPub file clients")
 	clientListMutex.Lock()
 	next := clientList
 	size := sizeOfClientList()
