@@ -63,7 +63,7 @@ type NewClientSetup struct {
 	RpcAddress string
 }
 
-// address of chat server
+// address of server
 type ChatServer struct {
 	ServerName       string
 	ServerRpcAddress string
@@ -94,7 +94,7 @@ type ServerReply struct {
 
 /* Global Variables */
 
-// RPC of chat server
+// RPC of server
 var NewRpcChatServer string
 var chatServer *rpc.Client
 
@@ -154,28 +154,12 @@ type ClientMessageService int
 //
 //**************************************************************************
 
-// Method for a client to call another client to transfer file data
+// Method for a server to call client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
 	inputCond.L.Lock()
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
 	inputCond.L.Unlock()
 	Logger.LogLocalEvent("received public file transfer")
-	return nil
-}
-
-// Method to handle private rpc messages from clients
-func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
-	inputCond.L.Lock()
-	privateFlag := clientutil.EditText("PRIVATE FILE "+args.FileName+
-		" FROM => ", Yellow, Intensity_1)
-	messageOwner := clientutil.EditText(args.Username, Green, Intensity_1)
-	output := clientutil.RemoveNewLine(privateFlag + messageOwner)
-	//messageChannel <- output
-	//msgConditional.Signal()
-	fmt.Println(output)
-	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
-	inputCond.L.Unlock()
-	Logger.LogLocalEvent("received private file transfer")
 	return nil
 }
 
@@ -190,6 +174,28 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 	Logger.LogLocalEvent("received public message")
 
 	reply.Message = ""
+	return nil
+}
+
+//**************************************************************************
+//
+//                     RPC METHODS FOR CLIENT TO CLIENT COMMUNICATION
+//
+//**************************************************************************
+
+// Method to handle private rpc messages between clients
+func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
+	inputCond.L.Lock()
+	privateFlag := clientutil.EditText("PRIVATE FILE "+args.FileName+
+		" FROM => ", Yellow, Intensity_1)
+	messageOwner := clientutil.EditText(args.Username, Green, Intensity_1)
+	output := clientutil.RemoveNewLine(privateFlag + messageOwner)
+	//messageChannel <- output
+	//msgConditional.Signal()
+	fmt.Println(output)
+	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
+	inputCond.L.Unlock()
+	Logger.LogLocalEvent("received private file transfer")
 	return nil
 }
 
@@ -217,11 +223,11 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 //
 //**************************************************************************
 
-// Method for the load balancer to call the client to update rpc addresses of chat server
+// Method for the load balancer to call the client to update rpc addresses of server
 func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *ServerReply) error {
 	NewRpcChatServer = args.ServerRpcAddress
 	reply.Message = ""
-	Logger.LogLocalEvent("rpc chat server updated")
+	Logger.LogLocalEvent("rpc server updated")
 
 	// make the rpc call to the server as it's updated
 	attempts := 0
@@ -255,7 +261,7 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 /* Method to initiate client setup */
 func clientSetup() {
 
-	// initial chat server connection
+	// initial server connection
 	startupChatConnection()
 
 	// commands to use throughout the message
@@ -296,7 +302,7 @@ func joinLoadBalancerServer() {
 	var message NewClientSetup
 	// Set up buffered reader
 	for {
-		// read user username and send to chat server
+		// read user username and send to loadbalancer
 		uname := clientutil.GetClientUsername()
 		pword := clientutil.GetClientPassword()
 		username = uname
@@ -324,7 +330,7 @@ func joinLoadBalancerServer() {
 	}
 }
 
-// method to announce to chat server after approval by loadbalancer
+// method to announce to server after approval by loadbalancer
 func initChatServerConnection() {
 	var reply ServerReply
 	var info ClientInfo
@@ -332,7 +338,7 @@ func initChatServerConnection() {
 	info.Username = username
 	info.RPC_IPPORT = clientRpcAddress
 
-	Logger.LogLocalEvent("initialize chat server connection")
+	Logger.LogLocalEvent("initialize server connection")
 	err := chatServer.Call("MessageService.ConnectionInit", info, &reply)
 	checkError(err)
 }
