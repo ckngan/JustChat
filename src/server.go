@@ -129,22 +129,25 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 }
 
 func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
+	historyMutex.Lock()
 	println("We received a new message")
 
 	inClockedMsg := ClockedClientMsg{
 		ClientMsg: args.ClientMsg,
 		ServerId:  args.ServerId,
 		Clock:     args.Clock}
-
+	
 	numMsgsRcvd++
-	fmt.Printf("new msg from other server: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 	toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
-
+	
+	if thisClock < numMsgsRcvd {
+		thisClock = numMsgsRcvd
+	}
 
 	sendPublicMsgClients(inClockedMsg.ClientMsg)
 
-
 	checkBufFull()
+	historyMutex.Unlock()
 
 	reply.Message = "success"
 	return nil
@@ -247,6 +250,7 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 
 // method for public message transfer
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
+	historyMutex.Lock()
 	println("We received a new message")
 	println("username: " + args.Username + " Message: " + args.Message)
 
@@ -256,7 +260,6 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 	thisClock++
 	numMsgsRcvd++
-	fmt.Printf("new client msg: Clock=%d, Msgs Rcvd=%d\n", thisClock, numMsgsRcvd)
 
 	var hinder sync.WaitGroup
 	hinder.Add(2)
@@ -271,9 +274,11 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 		println("after go routine 2")
 	}()
 
-	checkBufFull() // check if buffer @ 50, if yes flush, else do nothing..check before or after we send?
+	checkBufFull()
+	historyMutex.Unlock()
+
 	hinder.Wait()
-	println("Bakc from sending messages before sending success to sender")
+	println("Back from sending messages before sending success to sender")
 	reply.Message = "success"
 	return nil
 }
@@ -371,8 +376,8 @@ func main() {
 	clientList = nil
 
 	// setup for chat history
-	//toHistoryBuf[0] = ClockedClientMsg{ClientMsg: ClientMessage{Username: "bob", Message: "zzz"}, ServerId: "thisServer", Clock: 5}
 	toHistoryBuf = make([]ClockedClientMsg, 50)
+	historyMutex = &sync.Mutex{}
 	thisClock = 0
 	numMsgsRcvd = 0
 
@@ -880,11 +885,9 @@ func sendPublicMsgServers(message ClientMessage) {
 	var wg sync.WaitGroup
 	wg.Add(size)
 
-	id := strings.Replace(RECEIVE_PING_ADDR, ".", "", -1)
-
 	clockedMsg := ClockedClientMsg{
 		ClientMsg: message,
-		ServerId:  id,
+		ServerId:  RECEIVE_PING_ADDR,
 		Clock:     thisClock}
 
 	toHistoryBuf[numMsgsRcvd-1] = clockedMsg
@@ -1139,8 +1142,6 @@ func getAddr(uname string) string {
 
 func checkBufFull() {
 	if numMsgsRcvd == 50 {
-		// TODO sort
-		fmt.Println(toHistoryBuf)
 		writeHistoryToFile(toHistoryBuf)
 
 		// flush all variables
@@ -1152,7 +1153,11 @@ func checkBufFull() {
 
 func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 
-	_, err := os.Stat("../ChatHistory/ChatHistory.txt")
+	// this server's chat history filename
+	noPeriods := strings.Replace(RECEIVE_PING_ADDR, ".", "", -1)
+	safeFile := strings.Replace(noPeriods, ":", "-", 1)
+
+	_, err := os.Stat("../ChatHistory/"+safeFile+".txt")
 
 	if os.IsNotExist(err) {
 
@@ -1163,7 +1168,9 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		}
 		checkError(err)
 
-		f, er := os.Create("../ChatHistory/ChatHistory.txt")
+		
+		// create chat history file with server ID
+		f, er := os.Create("../ChatHistory/"+safeFile+".txt")
 		if er != nil {
 			println("error: couldn't create chat history file")
 		}
@@ -1171,9 +1178,9 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		f.Close()
 	}
 
-	f, errr := os.OpenFile("../ChatHistory/ChatHistory.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	f, errr := os.OpenFile("../ChatHistory/"+safeFile+".txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if errr != nil {
-		println("error: couldn't open chat history file")
+		println("error: couldn't open this chat history file")
 	}
 	defer f.Close()
 
