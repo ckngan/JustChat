@@ -103,6 +103,9 @@ var username string
 // Client Password
 var password string
 
+// download directory
+var downloadDirectory string
+
 // A channel to pipe incoming messages to
 var messageChannel chan string
 
@@ -334,27 +337,6 @@ func getClientPassword() string {
 	return pword
 }
 
-// method to receive download directory from user
-// method also checks if directory exists
-func getDownloadDirectory() string {
-	// Reading input from user for download
-	filepath := ""
-	command := "Please enter download directory to receive file:"
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print(editText(command, Blue_B, Intensity_1), " ")
-		inputMsg, _ := reader.ReadString('\n')
-		filepath = inputMsg
-		if len(filepath) > 0 {
-			break
-		} else {
-			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
-		}
-	}
-	reader.Reset(os.Stdin)
-	return removeNewLine(filepath)
-}
-
 // Method to get message from client's console
 func getMessage() string {
 
@@ -378,8 +360,6 @@ func getMessage() string {
 
 // Method to handle all chat input from client
 func chat() {
-	// method to receive messages from channel
-	go flushToConsole()
 	for {
 		inputMessage := getMessage()
 		messageArr := strings.Split(inputMessage, "#")
@@ -498,6 +478,7 @@ func sendPrivateFile(user string, filepath string) {
 		sendCond.Wait()
 		err = chatServer.Call("MessageService.SendPrivate", request, &reply)
 	}
+	sendCond.L.Unlock()
 
 	privateClient, err := rpc.Dial("tcp", reply.RPC_IPPORT)
 	if err != nil {
@@ -521,7 +502,7 @@ func sendPrivateFile(user string, filepath string) {
 		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your file transfer."
 		msgConditional.Signal()
 	}
-	sendCond.L.Unlock()
+
 	// reply should be IP port of the
 	return
 }
@@ -565,41 +546,36 @@ func sendPrivateMessage(user string, message string) {
 }
 
 // Method for user to accept or decline file transfers
-func receiveFilePermission(filename string) bool {
-	// Reading input from user for username
+func receiveFilePermission(filename string) (flag bool) {
+	request := editText("Do you want to receive the file "+filename+" (Y/N)?", Blue_B, Intensity_1)
 	reader := bufio.NewReader(os.Stdin)
+	flag = false
 	for {
-		fmt.Print(editText("Do you want to receive the file "+filename+" (y/n)?", Blue_B, Intensity_1), " ")
+		fmt.Print(request)
 		permitInput, _ := reader.ReadString('\n')
-		permit := removeNewLine(strings.TrimSpace(strings.ToLower(permitInput)))
-		fmt.Println(permit)
-		if len(permit) > 0 {
-			if permit == "y" {
-				reader.Reset(os.Stdin)
-				return true
-
-			} else if permit == "n" {
-				reader.Reset(os.Stdin)
-				return false
-
-			} else {
-				fmt.Println(editText("Invalid command, please use (y/n)\n", Red, Intensity_1))
-			}
+		permit := strings.TrimSpace(permitInput)
+		yes := strings.EqualFold(permit, "y")
+		no := strings.EqualFold(permit, "n")
+		if yes {
+			flag = true
+			break
+		} else if no {
+			flag = false
+			break
 		} else {
-			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
+			fmt.Println(editText("Invalid command, please use (Y/N)", Red, Intensity_1))
 		}
 	}
+	return
 }
 
 // Method to handle the receipt of files
 func handleFileTransfer(filename string, user string, filedata []byte) string {
 	// option to receive file
 	if receiveFilePermission(filename) {
-		directory := getDownloadDirectory()
-		fmt.Println(directory)
-		fmt.Println(filename)
+		path := downloadDirectory
 		// creating file to be written to
-		newFile, err := os.Create(directory + filename)
+		newFile, err := os.Create(path + filename)
 		if err == nil {
 
 			// writing file received from rpc
@@ -761,6 +737,10 @@ func main() {
 	// Do something to advertise global rpc address
 	clientRpcAddress = clientServer.Addr().String()
 
+	// download folder for files
+	downloadDirectory = "../Downloads/"
+	_ = os.MkdirAll(downloadDirectory, 0777)
+
 	fmt.Println("Client IP:Port --> ", clientRpcAddress)
 
 	// Create log
@@ -780,6 +760,8 @@ func main() {
 			// Accept call from loadbalancer/server/client
 		}
 	}()
+	// method to receive messages from channel
+	go flushToConsole()
 
 	clientSetup()
 
