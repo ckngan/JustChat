@@ -188,7 +188,7 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 	messageChannel <- output
 	msgConditional.Signal()
 	
-	Logger.LogLocalEvent("received global message")
+	Logger.LogLocalEvent("received public message")
 
 	reply.Message = ""
 	return nil
@@ -667,6 +667,7 @@ func getFile(filename string) {
 			msgConditional.Signal()
 		} else {
 			_ = handleFileTransfer(reply.FileName, reply.Username, reply.Data)
+			Logger.LogLocalEvent("file received")
 		}
 	}
 }
