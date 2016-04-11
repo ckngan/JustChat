@@ -147,7 +147,6 @@ var filesCond *sync.Cond
 // GoVector log
 var Logger *govec.GoLog
 
-
 //**************************************************************
 //
 //                       MAIN METHOD
@@ -452,7 +451,7 @@ func contactLBsToAnnounceSelf() {
 //
 //	This method will find the first "online" load balancer and get the most
 //	up to date client list and server list
-//	
+//
 //	If this is the first load balancer to start, no data is retrieved
 //
 func getInfoFromFirstLB() {
@@ -494,7 +493,7 @@ func getInfoFromFirstLB() {
 //
 //	This method is called at startup to prepare this load balancer for use
 //
-//	
+//
 //
 func initializeLB() {
 	lbDesignation = -1
@@ -1079,7 +1078,7 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 //	This is the first method a client calls when it comes online. It will add
 //	the client to the list of clients after authenticating username and password.
 //	Then it will find a chat server to use and tell the client to connect to it.
-//	
+//
 //	Calls are made to other load balancers to alert them to the changes.
 //
 func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
@@ -1145,7 +1144,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 //
 //	This returns the list of all availible files to a client
 //
-func (msgSvc *MessageService) getFileList(reply *([]string)) error {
+func (msgSvc *MessageService) GetFileList(message *string, reply *([]string)) error {
 	filesCond.L.Lock()
 	(*reply) = globalFileList
 	filesCond.L.Unlock()
