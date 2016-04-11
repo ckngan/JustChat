@@ -408,14 +408,12 @@ func main() {
 	thisClock = 0
 	numMsgsRcvd = 0
 
-<<<<<<< HEAD
 	// Create log
 	Logger = govec.InitializeMutipleExecutions("server "+RECEIVE_PING_ADDR, "sys")
 	Logger.LogThis("server was initialized", "server "+RECEIVE_PING_ADDR, "{\"server "+RECEIVE_PING_ADDR+"\":1}")
 
 	////////////////////////////////////////////////////////////////////////////////////////
-=======
->>>>>>> 1f0407d42c617c5045075156b892734f85b9a995
+
 	// LOAD BALANCER tcp.rpc
 	ip := "localhost" //getIP()
 	nodeService := new(NodeService)
@@ -872,11 +870,7 @@ func sendPublicMsgServers(message ClientMessage) {
 					if err == nil {
 						fmt.Println("we sent a message to a server: ", reply.Message)
 					} else {
-<<<<<<< HEAD
-						println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error call.")
-=======
 						println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " error on call.")
->>>>>>> 1f0407d42c617c5045075156b892734f85b9a995
 					}
 					systemService.Close()
 				}
@@ -898,11 +892,7 @@ func sendPublicMsgClients(message ClientMessage) {
 	clientListMutex.Unlock()
 	var wg sync.WaitGroup
 	wg.Add(size)
-<<<<<<< HEAD
-	i := 0
-=======
 
->>>>>>> 1f0407d42c617c5045075156b892734f85b9a995
 	for next != nil {
 		go func(next *ClientItem, message ClientMessage) {
 			defer wg.Done()
@@ -919,26 +909,9 @@ func sendPublicMsgClients(message ClientMessage) {
 					var reply ServerReply
 					// client api uses ClientMessageService
 					errr := systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
-<<<<<<< HEAD
-					//checkError(err)
-					if errr == nil {
-						i = i + 1
-						fmt.Println("******************We sent a message to a client: ", reply.Message, " ", i)
-					} else {
-						println("we tried sending a message to a client but got: ", err)
-					}
-					systemService.Close()
-				}
-
-			} else {
-				i = i + 1
-				fmt.Println("*****************We  didnt send a message to a client caus its the sender: ", i)
-=======
 					checkError(errr)
 					systemService.Close()
 				}
-
->>>>>>> 1f0407d42c617c5045075156b892734f85b9a995
 			}
 		}(next, message)
 
