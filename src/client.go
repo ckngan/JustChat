@@ -757,7 +757,7 @@ func main() {
 				log.Fatal("Connection error:", err)
 			}
 			go rpc.ServeConn(conn)
-			Logger.LogLocalEvent("rpc connection started")
+			Logger.LogLocalEvent("client rpc connection started")
 			// Accept call from loadbalancer/server/client
 		}
 	}()
