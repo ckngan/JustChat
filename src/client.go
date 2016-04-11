@@ -201,7 +201,7 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Serv
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
-	inputCond.L.Lock()
+	//inputCond.L.Lock()
 	privateFlag := clientutil.EditText("PRIVATE MESSAGE FROM => ", Yellow, Intensity_1)
 	messageOwner := clientutil.EditText(args.Username, Green, Intensity_1)
 	messageBody := clientutil.EditText(args.Message, Yellow, Intensity_1)
@@ -209,7 +209,7 @@ func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, repl
 		": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
-	inputCond.L.Unlock()
+	//inputCond.L.Unlock()
 
 	Logger.LogLocalEvent("received private message")
 
