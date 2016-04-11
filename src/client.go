@@ -121,6 +121,7 @@ var msgConditional *sync.Cond
 
 var sendMutex sync.Mutex
 var sendCond *sync.Cond
+
 var signup string
 var welcome string
 
@@ -142,7 +143,8 @@ func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *Serv
 	messageOwner := editText(args.Username, Green, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner)
 	fmt.Println(output)
-	messageChannel <- output
+	//messageChannel <- output
+	//msgConditional.Signal()
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
 	Logger.LogLocalEvent("received file transfer")
 	return nil
