@@ -401,6 +401,9 @@ func filterAndSendMessage(msg []string) {
 			return
 		} else if command == "available files" {
 			getFileList()
+		} else {
+			clientutil.IncorrectCommand()
+			return
 		}
 	} else if len(msg) == 3 {
 		command = strings.TrimSpace(msg[1])
@@ -411,8 +414,7 @@ func filterAndSendMessage(msg []string) {
 		} else if command == "get" {
 			getFile(file)
 		} else {
-			fmt.Println("Incorrect command!!!!!")
-			clientutil.MessageCommands()
+			clientutil.IncorrectCommand()
 			return
 		}
 	} else if len(msg) == 4 {
@@ -426,8 +428,7 @@ func filterAndSendMessage(msg []string) {
 		} else if command == "message" {
 			sendPrivateMessage(user, message)
 		} else {
-			fmt.Println("Incorrect command!!!!!")
-			clientutil.MessageCommands()
+			clientutil.IncorrectCommand()
 			return
 		}
 	}

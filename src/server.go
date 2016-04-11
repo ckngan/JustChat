@@ -34,14 +34,17 @@ type MessageService int
 type ValReply struct {
 	Val string // value; depends on the call
 }
+
 //serverReply
 type ServerReply struct {
 	Message string // value; depends on the call
 }
+
 //Node List reply
 type NodeListReply struct {
 	ListOfNodes *ServerItem
 }
+
 //server item struct
 type ServerItem struct {
 	UDP_IPPORT        string
@@ -137,7 +140,6 @@ var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk wri
 var historyMutex *sync.Mutex
 var Logger *govec.GoLog // GoVector log
 
-
 //**************************************************************************
 //
 //              "BACK-END" SERVER AND LOAD BALANCER RPC METHODS
@@ -147,7 +149,7 @@ var Logger *govec.GoLog // GoVector log
 /*
 * method so that we are able to be notified with the information of a new node
 * when a new node joins the load balancer
-*/
+ */
 func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
 	println("A new server node has joined the system")
 	Logger.LogLocalEvent("new server node acknowledged")
@@ -158,7 +160,7 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 
 /*
 *method to send a public message out from a server to all clients that are connected
-*/
+ */
 func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
 	historyMutex.Lock()
 	Logger.LogLocalEvent("received new public message")
@@ -186,7 +188,7 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 
 /*
 *method to send a public file out from a server to all clients that are connected
-*/
+ */
 func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("We received a new File")
 	Logger.LogLocalEvent("received new public file")
@@ -205,7 +207,7 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 
 /*
 *method to store a file
-*/
+ */
 func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
 	println("Storing A File...")
 	Logger.LogLocalEvent("storing a file")
@@ -223,7 +225,7 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 
 /*
 *method to retrieve a file, if not found returns with "404" in the Username ;p
-*/
+ */
 func (nodeSvc *NodeService) GetFile(filename *string, reply *FileData) error {
 	Logger.LogLocalEvent("received file request")
 	path := "../Files/" + *filename
@@ -256,7 +258,7 @@ func (nodeSvc *NodeService) GetFile(filename *string, reply *FileData) error {
 
 /*
 *method to delete a file
-*/
+ */
 func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
 	Logger.LogLocalEvent("received delete file request")
 	println("Deleting file: ", args.FileName)
@@ -280,7 +282,7 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 
 /*
 *method for deleting a dead storage node
-*/
+ */
 func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
 	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
 	serverListMutex.Lock()
@@ -300,8 +302,9 @@ func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBRe
 
 /*
 * method for joining the storage node
-*/
+ */
 func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
+
 	println("A client has joined the server.")
 	addClient(message.Username, message.RPC_IPPORT)
 	reply.Message = "success"
@@ -310,7 +313,7 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 
 /*
  * method for public message transfer
-*/
+ */
 func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
 	historyMutex.Lock()
 
@@ -342,7 +345,7 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 
 /*
  * method for public file transfer
-*/
+ */
 func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) error {
 	println("File Received.")
 
@@ -381,7 +384,7 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 
 /*
 * Method to request client information for private correspondence
-*/
+ */
 func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) error {
 	println("username requested: " + args.Username)
 	//find requested user's IP and send it back
@@ -395,7 +398,7 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 
 /*
 *Method to retrieve a file with the given name from the connected servers
-*/
+ */
 func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 
 	serverListMutex.Lock()
@@ -811,7 +814,7 @@ func addNode(udp string, clientRPC string, serverRPC string) {
 
 /*
 * Checks whether node with UDP_IPPORT equal to string ident exists
-*/
+ */
 func isNewNode(ident string) bool {
 
 	next := serverList
@@ -828,7 +831,7 @@ func isNewNode(ident string) bool {
 
 /*
 *Checks the size of the server list
-*/
+ */
 
 func sizeOfServerList() (total int) {
 	next := serverList
@@ -922,7 +925,7 @@ func sizeOfClientList() (total int) {
 
 /*
 * helper method for RPC method that sends public messages to the servers connected
-*/
+ */
 func sendPublicMsgServers(message ClientMessage) {
 
 	serverListMutex.Lock()
@@ -971,10 +974,9 @@ func sendPublicMsgServers(message ClientMessage) {
 	return
 }
 
-
 /*
 * helper method for RPC method that sends public messages to the clients connected
-*/
+ */
 func sendPublicMsgClients(message ClientMessage) {
 	clientListMutex.Lock()
 	next := clientList
@@ -1015,7 +1017,7 @@ func sendPublicMsgClients(message ClientMessage) {
 
 /*
 * Stores the given file to the directory Files
-*/
+ */
 func storeFile(file FileData) {
 	path := "../Files/"
 	err := os.MkdirAll(path, 0777)
@@ -1030,7 +1032,7 @@ func storeFile(file FileData) {
 
 /*
 * helper method for RPC method that sends public files to the servers connected
-*/
+ */
 func sendPublicFileServers(file FileData) {
 	serverListMutex.Lock()
 	next := serverList
@@ -1070,7 +1072,7 @@ func sendPublicFileServers(file FileData) {
 
 /*
 * helper method for RPC method that sends public files to the clients connected
-*/
+ */
 func sendPublicFileClients(file FileData) {
 	clientListMutex.Lock()
 	next := clientList
@@ -1152,7 +1154,7 @@ func deleteClientFromList(uname string) {
 
 /*
 * retrieves the IP of the local host
-*/
+ */
 func getIP() (ip string) {
 
 	host, _ := os.Hostname()
@@ -1167,7 +1169,7 @@ func getIP() (ip string) {
 
 /*
 *gets the Addr of the user Username from the load balancer
-*/
+ */
 func getAddr(uname string) string {
 	Logger.LogLocalEvent("dialing loadbalancer")
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
@@ -1188,10 +1190,9 @@ func getAddr(uname string) string {
 	return reply.Message
 }
 
-
 /*
 * checks if message buffer is full
-*/
+ */
 func checkBufFull() {
 	if numMsgsRcvd == 50 {
 		writeHistoryToFile(toHistoryBuf)
@@ -1205,7 +1206,7 @@ func checkBufFull() {
 
 /*
 * writes given array of client messages to file ChatHistory
-*/
+ */
 func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 
 	// this server's chat history filename
@@ -1259,7 +1260,7 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 
 /*
 *checks whether the file with the given filename is currently in the Files directory
-*/
+ */
 func possessFile(filename string) (reply FileData) {
 	path := "../Files/" + filename
 

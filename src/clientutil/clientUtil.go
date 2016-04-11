@@ -145,6 +145,11 @@ func EditText(text string, color int, intensity int) string {
 		text + "\x1b[0m"
 }
 
+func IncorrectCommand() {
+	fmt.Println("Incorrect command!!!!!")
+	MessageCommands()
+}
+
 // method to print the commands users can use
 func MessageCommands() {
 
