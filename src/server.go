@@ -136,10 +136,10 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 		ClientMsg: args.ClientMsg,
 		ServerId:  args.ServerId,
 		Clock:     args.Clock}
-	
+
 	numMsgsRcvd++
 	toHistoryBuf[numMsgsRcvd-1] = inClockedMsg
-	
+
 	if thisClock < numMsgsRcvd {
 		thisClock = numMsgsRcvd
 	}
@@ -181,15 +181,15 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 	return nil
 }
 
-func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
+func (nodeSvc *NodeService) GetFile(filename string, reply *FileData) error {
 	println("gimme shit")
-	path := "../Files/" + args.Username + "/" + args.FileName
+	path := "../Files/"+ filename
 
 	fi, err := os.Stat(path)
 
 	if os.IsNotExist(err) {
 		println("File " + path + " Doesn't Exist")
-		reply = nil
+		reply.Username = "404"
 
 	} else {
 		// re-open file
@@ -202,9 +202,8 @@ func (nodeSvc *NodeService) GetFile(args *FileInfo, reply *FileData) error {
 		_, _ = file.Read(Data)
 
 		checkError(err)
-
-		reply.Username = args.Username
-		reply.FileName = args.FileName
+		reply.Username = "202"
+		reply.FileName = filename
 		reply.FileSize = fi.Size()
 		reply.Data = Data
 	}
@@ -304,17 +303,15 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 		sendPublicFileClients(file)
 	}()
 
-	/*
-		//store in k-1 other servers and keep track
-		storeFile := StoreFileData{
-			Username : args.Username,
-			UDP_IPPORT: RECEIVE_PING_ADDR,
-			FileName : args.FileName,
-			FileSize : args.FileSize,
-			Data     : args.Data}
-		kStores(storeFile)
-	*/
+
 	storeFile(file)
+	/*Send LB Filename to LB
+	var rep ServerReply
+	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
+	checkError(err)
+	err = systemService.Call("NodeService.TransferFile", args.FileName, &rep)
+	checkError(err)
+	systemService.Close()*/
 
 	hinder.Wait()
 	reply.Message = "success"
@@ -332,6 +329,60 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 	reply.RPC_IPPORT = rep
 
 	return nil
+}
+
+func (ms *MessageService) GetFile(filename string, reply *FileData)error{
+	println("a client wants to get a file!!")
+
+	serverListMutex.Lock()
+	next := serverList
+	serverListMutex.Unlock()
+
+	for next != nil {
+
+			if (*next).UDP_IPPORT != RECEIVE_PING_ADDR {
+
+			systemService, err := rpc.Dial("tcp", (*next).RPC_SERVER_IPPORT)
+			//checkError(err)
+			if err != nil {
+				println("SendPublicMsg To Servers: Server ", (*next).UDP_IPPORT, " isn't accepting tcp conns so skip it...")
+				reply = nil
+				//it's dead but the ping will eventually take care of it
+			} else {
+				var rep FileData
+				err = systemService.Call("NodeService.GetFile", filename, &rep)
+				checkError(err)
+				if err == nil && rep.Username != "404"{
+					fmt.Println("sent file to client: ", rep.FileName)
+					reply.Username = "202"
+					reply.FileName = rep.FileName
+					reply.FileSize = rep.FileSize
+					reply.Data = rep.Data
+					break
+				}else{
+					reply.Username = "404"
+				}
+				systemService.Close()
+			 }
+			}else{
+				println("our server has it")
+				resp := possessFile(filename)
+				if resp.Username != "404"{
+					reply.Username = resp.Username
+					reply.FileName = resp.FileName
+					reply.FileSize = resp.FileSize
+					reply.Data = resp.Data
+                    break
+				}else{
+					reply.Username = "404"
+				}
+			}
+		next = (*next).NextServer
+	}
+
+
+	return nil
+
 }
 
 //***********************Load Balancer RPC METHODS **********************************************//
@@ -382,7 +433,7 @@ func main() {
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// LOAD BALANCER tcp.rpc
-	ip := "localhost"//getIP()
+	ip := getIP()
 	nodeService := new(NodeService)
 	rpc.Register(nodeService)
 	c := make(chan int)
@@ -972,7 +1023,7 @@ func sendPublicMsgClients(message ClientMessage) {
 
 func storeFile(file FileData) {
 
-	path := "../Files/" + file.Username + "/"
+	path := "../Files/"
 	err := os.MkdirAll(path, 0777)
 	checkError(err)
 	println("FILENAAAAAAAAAAAAAAAAAAAAAAME: ", file.FileName)
@@ -1172,7 +1223,7 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		}
 		checkError(err)
 
-		
+
 		// create chat history file with server ID
 		f, er := os.Create("../ChatHistory/"+safeFile+".txt")
 		if er != nil {
@@ -1204,5 +1255,36 @@ func writeHistoryToFile(toHistoryBuf []ClockedClientMsg) {
 		}
 	}
 
+	return
+}
+
+func possessFile(filename string)( reply FileData){
+	println("we're in posses file")
+	path := "../Files/"+ filename
+
+	fi, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		println("File " + path + " Doesn't Exist")
+		reply = FileData{
+			Username: "404"}
+
+	} else {
+		// re-open file
+		var file, errr = os.OpenFile(path, os.O_RDWR, 0644)
+		checkError(errr)
+		defer file.Close()
+
+		Data := make([]byte, fi.Size())
+
+		_, _ = file.Read(Data)
+		checkError(err)
+
+		reply = FileData{
+			Username: "202",
+			FileName: filename,
+			FileSize: fi.Size(),
+			Data: Data}
+	}
 	return
 }
