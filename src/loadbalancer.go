@@ -74,7 +74,7 @@ type NodeListReply struct {
 	ListOfNodes *ServerItem
 }
 
-// Address of chat server
+// Address of server
 type ChatServer struct {
 	ServerName       string
 	ServerRpcAddress string
@@ -250,7 +250,7 @@ func main() {
 		}
 	}()
 
-	//setup to accept rpcCalls from message servers
+	//setup to accept rpcCalls from servers
 	messageNodeService := new(NodeService)
 	rpc.Register(messageNodeService)
 
@@ -317,7 +317,7 @@ func deleteNodeFromList(udpAddr string) {
 
 //	~~~heartbeetCheck~~~
 //
-//	Checks every 20 milliseconds to see if any message servers
+//	Checks every 20 milliseconds to see if any servers
 //	have died by attempting to dial their RPC listening port
 //
 //	If they have been declared dead, all clients on that message
@@ -357,7 +357,7 @@ func heartbeetCheck() {
 //	~~~giveClientNewServer~~~
 //
 //	Every client whose CurrentServer value matches the serverAddr
-//	argument will be told to use a different message server
+//	argument will be told to use a different server
 //
 func giveClientNewServer(serverAddr string) {
 	println("Giving new server")
@@ -399,7 +399,7 @@ func giveClientNewServer(serverAddr string) {
 				addServerDataToClient(s.UDP_IPPORT, name)
 
 				println("Assigning Client New Node")
-				Logger.LogLocalEvent("updating client with new chat server")
+				Logger.LogLocalEvent("updating client with new server")
 				callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 				if callErr != nil {
 					println("Error changing messaging server. Client doesn't have good node")
@@ -619,7 +619,7 @@ func addClientToList(username string, password string, addr string) {
 
 //	~~~getServerForCLient~~~
 //
-//	Returns the message server for the client with the fewest connected clients
+//	Returns the server for the client with the fewest connected clients
 //	and increments the number of connected clients on that server by 1
 //
 func getServerForCLient() (*ServerItem, error) {
@@ -717,7 +717,7 @@ func addClient(newClient *ClientItem) {
 
 //	~~~addNode~~~
 //
-//	Addes a new message server to the serverList by creating a ServerItem with
+//	Addes a new server to the serverList by creating a ServerItem with
 //	the information specified in the arguments
 //
 func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
@@ -744,7 +744,7 @@ func addNode(udp string, clientRPC string, serverRPC string, broadcast bool) {
 //	~~~alertAllLoabBalancers~~~
 //
 //	Iterate through all online load balancers and alert them to the presence of a new
-//	message server
+//	server
 //
 //	This also checks to see if a load balancer has gone offline and sets it to "offline"
 //	as needed
@@ -777,8 +777,8 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 
 //	~~~allertAllNodes~~~
 //
-//	Iterate through all message servers and alert them to the presence of a new
-//	message server
+//	Iterate through all servers and alert them to the presence of a new
+//	server
 //
 func allertAllNodes(newNode *ServerItem) {
 	//dial all active nodes and alert them of the new node in the system
@@ -897,8 +897,8 @@ func printOutAllClients() {
 
 //	~~~notifyServersOfNewNode~~~
 //
-//	Will iterate over the entire message server list and allert all message servers
-//	to the presence of a new message server.
+//	Will iterate over the entire server list and allert all servers
+//	to the presence of a new server.
 //
 func notifyServersOfNewNode(newNode NewNodeSetup) {
 
@@ -936,7 +936,7 @@ func notifyServersOfNewNode(newNode NewNodeSetup) {
 //	~~~NewNode~~~
 //
 //	This method is called by another load balancer to alert this load balancer
-//	of the addition of a message server to the system.
+//	of the addition of a server to the system.
 //
 func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	Logger.LogLocalEvent("received new load balancer")
@@ -1108,7 +1108,7 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 //
 //	This is the first method a client calls when it comes online. It will add
 //	the client to the list of clients after authenticating username and password.
-//	Then it will find a chat server to use and tell the client to connect to it.
+//	Then it will find a server to use and tell the client to connect to it.
 //
 //	Calls are made to other load balancers to alert them to the changes.
 //
@@ -1164,11 +1164,11 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
 		println(rpcUpdateMessage.ServerRpcAddress)
 
-		Logger.LogLocalEvent("update client rpc chat server")
+		Logger.LogLocalEvent("update client rpc server")
 		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
-			Logger.LogLocalEvent("unable to update client rpc chat server")
+			Logger.LogLocalEvent("unable to update client rpc server")
 			return nil
 		}
 
