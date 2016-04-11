@@ -163,6 +163,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	//assign argument values to global variables
 	clientConnAddress = os.Args[1]
 	nodeConnAdress = os.Args[2]
 
@@ -213,12 +214,11 @@ func main() {
 	clientService := new(MessageService)
 	rpc.Register(clientService)
 
+	//Listener go function for clients
 	rpcListener, err := net.Listen("tcp", clientConnAddress)
 	if err != nil {
 		log.Fatal("listen error:", err)
 	}
-
-	//Listener go function for clients
 	go func() {
 		for {
 			println("Waiting for Client Calls")
@@ -494,7 +494,7 @@ func getInfoFromFirstLB() {
 //
 //	This method is called at startup to prepare this load balancer for use
 //
-//	
+//	If there are already 3 load balancers online, then this one will shut down
 //
 func initializeLB() {
 	lbDesignation = -1
@@ -532,7 +532,8 @@ func initializeLB() {
 
 //	~~~updateClientDataToAllLBs~~~
 //
-//	TODO
+//	Updates the client data upon client reconnect to all load balancers
+//	currently online.
 //
 func updateClientDataToAllLBs(c *ClientItem) {
 	i := 0
@@ -563,7 +564,7 @@ func updateClientDataToAllLBs(c *ClientItem) {
 
 //	~~~sendClientDataToAllLBs~~~
 //
-//	TODO
+//	Sends the ClientItem specified to all of the online loadbalancers
 //
 func sendClientDataToAllLBs(c *ClientItem) {
 	i := 0
@@ -594,7 +595,7 @@ func sendClientDataToAllLBs(c *ClientItem) {
 
 //	~~~addClientToList~~~
 //
-//	Creats 
+//	Creats a new ClientItem object and adds it to the clientList
 //
 func addClientToList(username string, password string, addr string) {
 
