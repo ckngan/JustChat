@@ -999,13 +999,13 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 
 //	~~~NewFIle~~~
 //
-//	TODO
+//	Will add the file to the list of globally availible files and return "SUCCESS" upon completion.
 //
 //	STUB
 //
 func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
 	filesCond.L.Lock()
-	//globalFileList
+	globalFileList = append(globalFileList, *filename)
 	filesCond.L.Unlock()
 	(*reply) = "SUCCESS"
 	return nil
@@ -1013,7 +1013,10 @@ func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
 
 //	~~~NewNode~~~
 //
-//	TODO
+//	The first call a new messaging server will make when it comes online. This method will
+//	add the messaging server to the list ofavailible servers and will signal to any waiting
+//	routines that there is a new server added. All loadbalancers are alerted to the additional
+//	messaging server.
 //
 func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
 	//add node to list on connection
@@ -1042,7 +1045,8 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 
 //	~~~GetClientAddr~~~
 //
-//	TODO
+//	Given the username of the client in a ClientRequest message, the loadbalancer will return
+//	the public address that RPC calls can be received on for that client.
 //
 func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerReply) error {
 	clientConditional.L.Lock()
@@ -1072,7 +1076,11 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 
 //	~~~JoinChatService~~~
 //
-//	TODO
+//	This is the first method a client calls when it comes online. It will add
+//	the client to the list of clients after authenticating username and password.
+//	Then it will find a chat server to use and tell the client to connect to it.
+//	
+//	Calls are made to other load balancers to alert them to the changes.
 //
 func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
 
@@ -1135,7 +1143,7 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 
 //	~~~NewFIle~~~
 //
-//	TODO
+//	This returns the list of all availible files to a client
 //
 func (msgSvc *MessageService) getFileList(reply *([]string)) error {
 	filesCond.L.Lock()
