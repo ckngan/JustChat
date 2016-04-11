@@ -306,7 +306,7 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 		sendPublicFileClients(file)
 	}()
 	//TODO: UNCOMMENT THIS!!!!!! It is commented out for testning
-	//storeFile(file)
+	storeFile(file)
 
 	//Send LB Filename to LB
 	var rep string
@@ -328,6 +328,7 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 	//find requested user's IP and send it back
 	rep := getAddr(args.Username)
 	reply.Username = args.Username
+	fmt.Println("REQUESTED RPC,", rep)
 	reply.RPC_IPPORT = rep
 
 	return nil
@@ -350,6 +351,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 				reply.Username = "404"
 			} else {
 				var rep FileData
+				fmt.Println("FILENAME WANTED:", *filename)
 				err = systemService.Call("NodeService.GetFile", *filename, &rep)
 				checkError(err)
 				if err == nil && rep.Username != "404" {

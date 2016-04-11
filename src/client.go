@@ -116,11 +116,21 @@ var loadBalancer *rpc.Client
 var Logger *govec.GoLog
 
 //locks
+// this is to signal to the channel that a new message is waiting for output
 var msgMutex sync.Mutex
 var msgConditional *sync.Cond
 
+/* this is to allow another rpc method to be
+* called while waiting on this current method
+* to finish
+ */
 var sendMutex sync.Mutex
 var sendCond *sync.Cond
+
+/*  this locks stdin until user finishes entering input
+ */
+var inputMutex sync.Mutex
+var inputCond *sync.Cond
 
 var signup string
 var welcome string
@@ -131,20 +141,24 @@ type ClientMessageService int
 
 // Method for a client to call another client to transfer file data
 func (cms *ClientMessageService) TransferFile(args *FileData, reply *ServerReply) error {
+	inputCond.L.Lock()
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
+	inputCond.L.Unlock()
 	Logger.LogLocalEvent("received public file transfer")
 	return nil
 }
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) TransferFilePrivate(args *FileData, reply *ServerReply) error {
+	inputCond.L.Lock()
 	privateFlag := editText("PRIVATE FILE "+args.FileName+" FROM => ", Yellow, Intensity_1)
 	messageOwner := editText(args.Username, Green, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner)
-	fmt.Println(output)
 	//messageChannel <- output
 	//msgConditional.Signal()
+	fmt.Println(output)
 	reply.Message = handleFileTransfer(args.FileName, args.Username, args.Data)
+	inputCond.L.Unlock()
 	Logger.LogLocalEvent("received private file transfer")
 	return nil
 }
@@ -182,12 +196,12 @@ func (cms *ClientMessageService) UpdateRpcChatServer(args *ChatServer, reply *Se
 
 // Method for server to call client to receive message
 func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *ServerReply) error {
+
 	messageOwner := editText(args.Username, Yellow, Intensity_1)
 	messageBody := editText(args.Message, Green, Intensity_1)
 	output := removeNewLine(messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
-
 	Logger.LogLocalEvent("received public message")
 
 	reply.Message = ""
@@ -196,12 +210,14 @@ func (cms *ClientMessageService) ReceiveMessage(args *ClientMessage, reply *Serv
 
 // Method to handle private rpc messages from clients
 func (cms *ClientMessageService) ReceivePrivateMessage(args *ClientMessage, reply *ServerReply) error {
+	inputCond.L.Lock()
 	privateFlag := editText("PRIVATE MESSAGE FROM => ", Yellow, Intensity_1)
 	messageOwner := editText(args.Username, Green, Intensity_1)
 	messageBody := editText(args.Message, Yellow, Intensity_1)
 	output := removeNewLine(privateFlag + messageOwner + ": " + messageBody)
 	messageChannel <- output
 	msgConditional.Signal()
+	inputCond.L.Unlock()
 
 	Logger.LogLocalEvent("received private message")
 
@@ -310,7 +326,7 @@ func getClientUsername() string {
 			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
 		}
 	}
-	return uname
+	return removeNewLine(uname)
 }
 
 // Method to get client's username
@@ -333,11 +349,12 @@ func getClientPassword() string {
 			fmt.Println(editText("Must enter 3 or more characters\n", Red, Intensity_1))
 		}
 	}
-	return pword
+	return removeNewLine(pword)
 }
 
 // Method to get message from client's console
 func getMessage() string {
+	inputCond.L.Lock()
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -350,7 +367,8 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
-	return message
+	inputCond.L.Unlock()
+	return removeNewLine(message)
 }
 
 // Method to handle all chat input from client
@@ -790,6 +808,9 @@ func main() {
 	sendMutex = sync.Mutex{}
 	sendCond = sync.NewCond(&sendMutex)
 
+	inputMutex = sync.Mutex{}
+	inputCond = sync.NewCond(&sendMutex)
+
 	// allocate messageChannel for global access
 	messageChannel = make(chan string, bufferMax)
 	signup = "<----------------------- JustChat Signup ----------------------->"
@@ -808,12 +829,11 @@ func main() {
 
 	// Do something to advertise global rpc address
 	clientRpcAddress = clientServer.Addr().String()
-
 	// download folder for files
 	downloadDirectory = "../Downloads/"
 	_ = os.MkdirAll(downloadDirectory, 0777)
 
-	fmt.Println("Client IP:Port --> ", clientRpcAddress)
+	fmt.Println("Client RPC IP:Port --> ", clientRpcAddress)
 
 	// Create log
 	Logger = govec.InitializeMutipleExecutions("client "+clientRpcAddress, "sys")
