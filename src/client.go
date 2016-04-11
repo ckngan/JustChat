@@ -290,7 +290,6 @@ func initChatServerConnection() {
 
 // Method to get client's username
 func getClientUsername() string {
-
 	// Reading input from user for username
 	uname := ""
 	reader := bufio.NewReader(os.Stdin)
@@ -305,13 +304,11 @@ func getClientUsername() string {
 			fmt.Println(editText("Must enter 1 or more characters\n", Red, Intensity_1))
 		}
 	}
-	reader.Reset(os.Stdin)
-	return removeNewLine(uname)
+	return uname
 }
 
 // Method to get client's username
 func getClientPassword() string {
-
 	// Reading input from user for username
 	pword := ""
 	for {
@@ -335,11 +332,8 @@ func getClientPassword() string {
 
 // Method to get message from client's console
 func getMessage() string {
-
 	message := ""
 	reader := bufio.NewReader(os.Stdin)
-	//consoleUsername := strings.Split(username, "\n")[0]
-
 	for {
 		//fmt.Print(editText(consoleUsername, Blue_B, Intensity_1), ":")
 		inputMsg, _ := reader.ReadString('\n')
@@ -350,8 +344,7 @@ func getMessage() string {
 			fmt.Println(editText("Must enter 1 or more characters", Red, Intensity_1))
 		}
 	}
-	reader.Reset(os.Stdin)
-	return removeNewLine(message)
+	return message
 }
 
 // Method to handle all chat input from client
@@ -363,7 +356,9 @@ func chat() {
 	}
 }
 
-// method to filter messages and then send
+/* method to filter messages based on structure and call corresponding
+ * rpc method
+ */
 func filterAndSendMessage(msg []string) {
 
 	var reply ServerReply
@@ -371,7 +366,6 @@ func filterAndSendMessage(msg []string) {
 
 	command := msg[0]
 	if len(msg) == 1 {
-
 		sendMsg.Message = command
 		sendMsg.Username = username
 		sendCond.L.Lock()
@@ -442,6 +436,8 @@ func sendPublicFile(filepath string) {
 	return
 }
 
+/* Helper method to read file from disk and package it into a FileData struct
+ */
 func packageFile(path string) (fileData FileData, err error) {
 	//var fileData FileData
 
@@ -464,8 +460,7 @@ func packageFile(path string) (fileData FileData, err error) {
 
 }
 
-// method to send private file
-// func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ServerReply)
+// method to send private files based on username and filepath
 func sendPrivateFile(user string, filepath string) {
 	var request ClientRequest
 	var reply ClientInfo
@@ -501,12 +496,10 @@ func sendPrivateFile(user string, filepath string) {
 		messageChannel <- editText(user, Yellow, Intensity_1) + " " + reply.Message + " your file transfer."
 		msgConditional.Signal()
 	}
-
-	// reply should be IP port of the
 	return
 }
 
-// method to send private message
+// method to send private message based on user and message
 func sendPrivateMessage(user string, message string) {
 	var request ClientRequest
 	var reply ClientInfo
@@ -576,7 +569,6 @@ func handleFileTransfer(filename string, user string, filedata []byte) string {
 		// creating file to be written to
 		newFile, err := os.Create(path + filename)
 		if err == nil {
-
 			// writing file received from rpc
 			n, err := newFile.Write(filedata)
 			if err != nil {
