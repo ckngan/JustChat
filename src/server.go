@@ -485,10 +485,6 @@ func main() {
 	thisClock = 0
 	numMsgsRcvd = 0
 
-	// Create log
-	Logger = govec.InitializeMutipleExecutions("server"+RECEIVE_PING_ADDR, "sys")
-	Logger.LogThis("server was initialized", "server"+RECEIVE_PING_ADDR, "{\"server"+RECEIVE_PING_ADDR+"\":1}")
-
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// LOAD BALANCER tcp.rpc
@@ -524,6 +520,11 @@ func main() {
 	RECEIVE_PING_ADDR = ListenConn.LocalAddr().String()
 	println("uDP LISTEN: ", RECEIVE_PING_ADDR)
 	println("UDP SEND PINGS: ", SEND_PING_IPPORT)
+
+	// Create log
+	Logger = govec.InitializeMutipleExecutions("server "+RECEIVE_PING_ADDR, "sys")
+	Logger.LogThis("server was initialized", "server "+RECEIVE_PING_ADDR, "{\"server"+RECEIVE_PING_ADDR+"\":1}")
+
 	joinStorageServers() // Joining the servers through the LB
 	go initPingServers(PingAddr)
 	UDPService(ListenConn)
