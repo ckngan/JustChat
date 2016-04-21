@@ -150,10 +150,13 @@ var Logger *govec.GoLog // GoVector log
 * method so that we are able to be notified with the information of a new node
 * when a new node joins the load balancer
  */
-func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerReply) error {
+func (nodeSvc *NodeService) NewStorageNode(inbuf []byte, /* args *NewNodeSetup,*/ reply *ServerReply) error {
 	println("A new server node has joined the system")
+
+	var args = new(NewNodeSetup)
+	Logger.UnpackReceive("new server node acknowledged", inbuf, args)
+
 	addNode(args.UDP_IPPORT, args.RPC_CLIENT_IPPORT, args.RPC_SERVER_IPPORT)
-	Logger.LogLocalEvent("new server node acknowledged")
 	reply.Message = "success"
 	return nil
 }
@@ -161,9 +164,12 @@ func (nodeSvc *NodeService) NewStorageNode(args *NewNodeSetup, reply *ServerRepl
 /*
 *method to send a public message out from a server to all clients that are connected
  */
-func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerReply) error {
+func (nodeSvc *NodeService) SendPublicMsg(inbuf []byte, /*args *ClockedClientMsg,*/ reply *ServerReply) error {
+	var args = new(ClockedClientMsg)
+
 	historyMutex.Lock()
-	Logger.LogLocalEvent("received new public message (server)")
+	
+	Logger.UnpackReceive("received new public message (server)", inbuf, &args)
 
 	inClockedMsg := ClockedClientMsg{
 		ClientMsg: args.ClientMsg,
@@ -189,9 +195,11 @@ func (nodeSvc *NodeService) SendPublicMsg(args *ClockedClientMsg, reply *ServerR
 /*
 *method to send a public file out from a server to all clients that are connected
  */
-func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) error {
+func (nodeSvc *NodeService) SendPublicFile(inbuf []byte, /*args *FileData,*/ reply *ServerReply) error {
 	println("We received a new File")
-	Logger.LogLocalEvent("received new public file")
+	
+	var args = new(FileData)
+	Logger.UnpackReceive("received new public file", inbuf, &args)
 
 	file := FileData{
 		Username: args.Username,
@@ -208,8 +216,11 @@ func (nodeSvc *NodeService) SendPublicFile(args *FileData, reply *ServerReply) e
 /*
 *method to store a file
  */
-func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error {
+func (nodeSvc *NodeService) StoreFile(inbuf []byte, /*args *FileData,*/ reply *ServerReply) error {
 	println("Storing A File...")
+
+	var args = new(FileData)
+	Logger.UnpackReceive("storing file", inbuf, &args)
 
 	file := FileData{
 		Username: args.Username,
@@ -218,7 +229,6 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 		Data:     args.Data}
 	storeFile(file)
 
-	Logger.LogLocalEvent("file is stored")
 	reply.Message = "success"
 	return nil
 }
@@ -226,8 +236,10 @@ func (nodeSvc *NodeService) StoreFile(args *FileData, reply *ServerReply) error 
 /*
 *method to retrieve a file, if not found returns with "404" in the Username ;p
  */
-func (nodeSvc *NodeService) GetFile(filename *string, reply *FileData) error {
-	Logger.LogLocalEvent("received file request")
+func (nodeSvc *NodeService) GetFile(inbuf []byte, /*filename *string,*/ reply *FileData) error {
+	var filename = new(string)
+	Logger.UnpackReceive("received file request", inbuf, &filename)
+
 	path := "../Files/" + *filename
 
 	fi, err := os.Stat(path)
@@ -259,8 +271,10 @@ func (nodeSvc *NodeService) GetFile(filename *string, reply *FileData) error {
 /*
 *method to delete a file
  */
-func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error {
-	Logger.LogLocalEvent("received delete file request")
+func (nodeSvc *NodeService) DeleteFile(inbuf []byte, /*args *FileData,*/ reply *ServerReply) error {
+	var args = new(FileData)
+	Logger.UnpackReceive("received delete file request", inbuf, &args)
+
 	println("Deleting file: ", args.FileName)
 
 	path := "../Files/" + args.FileName
@@ -283,13 +297,15 @@ func (nodeSvc *NodeService) DeleteFile(args *FileData, reply *ServerReply) error
 /*
 *method for deleting a dead storage node
  */
-func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBReply) error {
+func (lbServ *NodeService) RemoveNode(inbuf []byte, /*nodeToRemove *NodeToRemove,*/ callback *LBReply) error {
 	//When recieve notice of a dead node (Lock access to serverlist and remove the dead node)
+	var nodeToRemove = new(NodeToRemove)
+	Logger.UnpackReceive("node removed", inbuf, &nodeToRemove)
+
 	serverListMutex.Lock()
 	println("\n\nCall to delete")
 	deleteNodeFromList(nodeToRemove.Node.UDP_IPPORT)
 	println("Should be deleted")
-	Logger.LogLocalEvent("node removed")
 	serverListMutex.Unlock()
 	return nil
 }
@@ -303,10 +319,12 @@ func (lbServ *NodeService) RemoveNode(nodeToRemove *NodeToRemove, callback *LBRe
 /*
 * method for joining the server
  */
-func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerReply) error {
+func (msgSvc *MessageService) ConnectionInit(inbuf []byte, /*message *ClientInfo,*/ reply *ServerReply) error {
 	println("A client has joined the server.")
+	var message = new(ClientInfo)
+	Logger.UnpackReceive("client has joined server", inbuf, &message)
+
 	addClient(message.Username, message.RPC_IPPORT)
-	Logger.LogLocalEvent("client has joined server")
 	reply.Message = "success"
 	return nil
 }
@@ -314,9 +332,11 @@ func (msgSvc *MessageService) ConnectionInit(message *ClientInfo, reply *ServerR
 /*
  * method for public message transfer
  */
-func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply) error {
+func (ms *MessageService) SendPublicMsg(inbuf []byte, /*args *ClientMessage,*/ reply *ServerReply) error {
+	var args = new(ClientMessage)
+
 	historyMutex.Lock()
-	Logger.LogLocalEvent("received new public message (client)")
+	Logger.UnpackReceive("received new public message (client)", inbuf, &args)
 
 	message := ClientMessage{
 		Username: args.Username,
@@ -347,8 +367,10 @@ func (ms *MessageService) SendPublicMsg(args *ClientMessage, reply *ServerReply)
 /*
  * method for public file transfer
  */
-func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) error {
+func (ms *MessageService) SendPublicFile(inbuf []byte, /*args *FileData,*/ reply *ServerReply) error {
 	println("File Received.")
+	var args = new(FileData)
+	Logger.UnpackReceive("received new file", inbuf, &args)
 
 	file := FileData{
 		Username: args.Username,
@@ -368,14 +390,14 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 	}()
 
 	storeFile(file)
-	Logger.LogLocalEvent("received new file")
 
 	//Send LB Filename to LB
 	var rep string
 	systemService, err := rpc.Dial("tcp", LOAD_BALANCER_IPPORT)
 	checkError(err)
-	Logger.LogLocalEvent("notify lb of new file")
-	err = systemService.Call("NodeService.NewFile", args.FileName, &rep)
+
+	outbuf := Logger.PrepareSend("notify lb of new file", args.FileName)
+	err = systemService.Call("NodeService.NewFile", outbuf, &rep)
 	checkError(err)
 	println(rep)
 	systemService.Close()
@@ -388,9 +410,12 @@ func (ms *MessageService) SendPublicFile(args *FileData, reply *ServerReply) err
 /*
 * Method to request client information for private correspondence
  */
-func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) error {
+func (ms *MessageService) SendPrivate(inbuf []byte, /*args *ClientRequest,*/ reply *ClientInfo) error {
+	var args = new(ClientRequest)
+	Logger.UnpackReceive("received client info request", inbuf, &args)
+
 	println("username requested: " + args.Username)
-	Logger.LogLocalEvent("received client info request")
+
 	//find requested user's IP and send it back
 	rep := getAddr(args.Username)
 	reply.Username = args.Username
@@ -404,8 +429,9 @@ func (ms *MessageService) SendPrivate(args *ClientRequest, reply *ClientInfo) er
 /*
 *Method to retrieve a file with the given name from the connected servers
  */
-func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
-	Logger.LogLocalEvent("received file request")
+func (ms *MessageService) GetFile(inbuf []byte, /*filename *string,*/ reply *FileData) error {
+	var filename = new(string)
+	Logger.UnpackReceive("received file request", inbuf, &filename)
 
 	serverListMutex.Lock()
 	next := serverList
@@ -421,8 +447,8 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 				reply.Username = "404"
 			} else {
 				var rep FileData
-				Logger.LogLocalEvent("requesting a file")
-				err = systemService.Call("NodeService.GetFile", *filename, &rep)
+				outbuf := Logger.PrepareSend("requesting a file", *filename)
+				err = systemService.Call("NodeService.GetFile", outbuf, &rep)
 				checkError(err)
 				if err == nil && rep.Username != "404" {
 					fmt.Println("sent file to client: ", rep.FileName)
@@ -430,6 +456,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 					reply.FileName = rep.FileName
 					reply.FileSize = rep.FileSize
 					reply.Data = rep.Data
+					
 					Logger.LogLocalEvent("sending file to client")
 					break
 				} else {
@@ -444,6 +471,7 @@ func (ms *MessageService) GetFile(filename *string, reply *FileData) error {
 				reply.FileName = resp.FileName
 				reply.FileSize = resp.FileSize
 				reply.Data = resp.Data
+				
 				Logger.LogLocalEvent("sending file to client")
 				break
 			} else {
@@ -522,8 +550,8 @@ func main() {
 	println("UDP SEND PINGS: ", SEND_PING_IPPORT)
 
 	// Create log
-	Logger = govec.InitializeMutipleExecutions("server "+RECEIVE_PING_ADDR, "sys")
-	Logger.LogThis("server was initialized", "server "+RECEIVE_PING_ADDR, "{\"server"+RECEIVE_PING_ADDR+"\":1}")
+	serverId := RECEIVE_PING_ADDR[16:]
+	Logger = govec.Initialize("server "+serverId, "server"+serverId)
 
 	joinStorageServers() // Joining the servers through the LB
 	go initPingServers(PingAddr)
@@ -609,7 +637,6 @@ func deleteServerFromList(udp string) {
 					inner = (*inner).NextServer
 				}
 			}
-
 		} else {
 			println("Node not found in list")
 		}
@@ -773,8 +800,8 @@ func joinStorageServers() {
 		RPC_SERVER_IPPORT: RPC_SYSTEM_IPPORT,
 		UDP_IPPORT:        RECEIVE_PING_ADDR}
 
-	Logger.LogLocalEvent("register new node")
-	err = systemService.Call("NodeService.NewNode", newNodeSetup, &reply)
+	outbuf := Logger.PrepareSend("register new node", newNodeSetup)
+	err = systemService.Call("NodeService.NewNode", outbuf, &reply)
 	checkError(err)
 
 	list := reply.ListOfNodes
@@ -959,8 +986,8 @@ func sendPublicMsgServers(message ClientMessage) {
 					//it's dead but the ping will eventually take care of it
 				} else {
 					var reply ServerReply
-					Logger.LogLocalEvent("broadcasting public message")
-					err = systemService.Call("NodeService.SendPublicMsg", clockedMsg, &reply)
+					outbuf := Logger.PrepareSend("broadcasting public message", clockedMsg)
+					err = systemService.Call("NodeService.SendPublicMsg", outbuf, &reply)
 					//checkError(err)
 					if err == nil {
 						fmt.Println("we sent a message to a server: ", reply.Message)
@@ -1004,9 +1031,9 @@ func sendPublicMsgClients(message ClientMessage) {
 					clientListMutex.Unlock()
 				} else {
 					var reply ServerReply
-					Logger.LogLocalEvent("sending public message")
+					outbuf := Logger.PrepareSend("sending public message", message)
 					// client api uses ClientMessageService
-					errr := systemService.Call("ClientMessageService.ReceiveMessage", message, &reply)
+					errr := systemService.Call("ClientMessageService.ReceiveMessage", outbuf, &reply)
 					checkError(errr)
 					systemService.Close()
 				}
@@ -1057,8 +1084,8 @@ func sendPublicFileServers(file FileData) {
 					//it's dead but the ping will eventually take care of it
 				} else {
 					var reply ServerReply
-					Logger.LogLocalEvent("transfer public file")
-					err = systemService.Call("NodeService.SendPublicFile", file, &reply)
+					outbuf := Logger.PrepareSend("transfer public file", file)
+					err = systemService.Call("NodeService.SendPublicFile", outbuf, &reply)
 					checkError(err)
 					if err == nil {
 						fmt.Println("sent file to server: ", reply.Message)
@@ -1098,8 +1125,8 @@ func sendPublicFileClients(file FileData) {
 					clientListMutex.Unlock()
 				} else {
 					var reply ServerReply
-					Logger.LogLocalEvent("transfer public file")
-					err = systemService.Call("ClientMessageService.TransferFile", file, &reply)
+					outbuf := Logger.PrepareSend("transfer public file", file)
+					err = systemService.Call("ClientMessageService.TransferFile", outbuf, &reply)
 					checkError(err)
 					if err == nil {
 						fmt.Println("sent file to client: ", reply.Message)
@@ -1181,8 +1208,8 @@ func getAddr(uname string) string {
 	clientRequest := ClientRequest{
 		Username: uname}
 
-	Logger.LogLocalEvent("requesting client address")
-	err = systemService.Call("NodeService.GetClientAddr", clientRequest, &reply)
+	outbuf := Logger.PrepareSend("requesting client address", clientRequest)
+	err = systemService.Call("NodeService.GetClientAddr", outbuf, &reply)
 	checkError(err)
 
 	fmt.Println("we received a reply from the server: ", reply.Message)

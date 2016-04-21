@@ -188,8 +188,7 @@ func main() {
 
 	// Create log
 	lbId = ipV4[5:]
-	Logger = govec.InitializeMutipleExecutions("loadbalancer "+lbId, "sys")
-	Logger.LogThis("loadbalancer was initialized", "loadbalancer "+lbId, "{\"loadbalancer "+lbId+"\":1}")
+	Logger = govec.Initialize("lb "+lbId, "lb "+lbId)
 
 	//Locks
 	serverListMutex = sync.Mutex{}
@@ -396,8 +395,8 @@ func giveClientNewServer(serverAddr string) {
 				addServerDataToClient(s.UDP_IPPORT, name)
 
 				println("Assigning Client New Node")
-				Logger.LogLocalEvent("updating client with new server")
-				callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
+				outbuf := Logger.PrepareSend("updating client w/ new server", rpcUpdateMessage)
+				callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", outbuf, &clientReply)
 				if callErr != nil {
 					println("Error changing messaging server. Client doesn't have good node")
 					return
@@ -439,8 +438,8 @@ func contactLBsToAnnounceSelf() {
 			rpcUpdateMessage.Message = "NIL"
 			rpcUpdateMessage.OnlineNumber = lbDesignation
 
-			Logger.LogLocalEvent("announce self to a loadbalancer")
-			conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
+			outbuf := Logger.PrepareSend("announce self to a loadbalancer", rpcUpdateMessage)
+			conn.Call("LBService.GetCurrentData", outbuf, &lbReply)
 		}
 	}
 }
@@ -476,15 +475,16 @@ func getInfoFromFirstLB() {
 
 	rpcUpdateMessage.Message = "M"
 
-	Logger.LogLocalEvent("request current data from other lb")
-	callError := conn.Call("LBService.GetCurrentData", rpcUpdateMessage, &lbReply)
+	outbuf := Logger.PrepareSend("request current data from other lb", rpcUpdateMessage)
+	callError := conn.Call("LBService.GetCurrentData", outbuf, &lbReply)
+
 	if callError != nil {
 		println("Error 2: ", callError.Error())
 	}
 
-	Logger.LogLocalEvent("received current data from other lb")
 	clientList = lbReply.Clients
 	serverList = lbReply.Nodes
+	Logger.LogLocalEvent("received current data from other lb")
 
 	return
 }
@@ -548,8 +548,8 @@ func updateClientDataToAllLBs(c *ClientItem) {
 
 			nC.ClientObject = c
 
-			Logger.LogLocalEvent("client update")
-			callError := conn.Call("LBService.UpdateClient", nC, &lbReply)
+			outbuf := Logger.PrepareSend("push client update", nC)
+			callError := conn.Call("LBService.UpdateClient", outbuf, &lbReply)
 			if callError != nil {
 				println("Error 2: ", callError.Error())
 			}
@@ -578,8 +578,8 @@ func sendClientDataToAllLBs(c *ClientItem) {
 
 			nC.ClientObject = c
 
-			Logger.LogLocalEvent("send new client data")
-			callError := conn.Call("LBService.NewClient", nC, &lbReply)
+			outbuf := Logger.PrepareSend("send client data", nC)
+			callError := conn.Call("LBService.NewClient", outbuf, &lbReply)
 			if callError != nil {
 				println("Error 2: ", callError.Error())
 			}
@@ -754,8 +754,8 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 		if LBServers[i].Status == "online" && i != lbDesignation {
 			conn, err := rpc.Dial("tcp", LBServers[i].Address)
 			if err == nil {
-				Logger.LogLocalEvent("new server alert for lb")
-				conn.Call("LBService.NewNode", nodeSetupMessage, &replyFromNode)
+				outbuf := Logger.PrepareSend("new server alert for lb", nodeSetupMessage)
+				conn.Call("LBService.NewNode", outbuf, &replyFromNode)
 			} else {
 				LBServers[i].Status = "offline"
 			}
@@ -763,7 +763,6 @@ func alertAllLoabBalancers(newNode *ServerItem) {
 	}
 
 	return
-
 }
 
 //	~~~allertAllNodes~~~
@@ -788,8 +787,8 @@ func allertAllNodes(newNode *ServerItem) {
 
 		var replyFromNode ServerReply
 
-		Logger.LogLocalEvent("new server alert for other servers")
-		callErr := conn.Call("NodeService.NewStorageNode", nodeSetupMessage, &replyFromNode)
+		outbuf := Logger.PrepareSend("new server alert for other servers", nodeSetupMessage)
+		callErr := conn.Call("NodeService.NewStorageNode", outbuf, &replyFromNode)
 		if callErr != nil {
 			println("Error with method call 'NodeService.NewStorageNode' of: ", next.UDP_IPPORT)
 			return
@@ -903,12 +902,11 @@ func notifyServersOfNewNode(newNode NewNodeSetup) {
 		} else {
 			var reply ServerReply
 
-			Logger.LogLocalEvent("notification: new server node online")
-			err = systemService.Call("NodeService.NewStorageNode", newNode, &reply)
+			outbuf := Logger.PrepareSend("notification: new server node online", newNode)
+			err = systemService.Call("NodeService.NewStorageNode", outbuf, &reply)
 			checkError(err)
 			if err == nil {
 				fmt.Println("we received a reply from the server: ", reply.Message)
-				Logger.LogLocalEvent("new server node notification successful")
 			}
 			systemService.Close()
 		}
@@ -927,8 +925,9 @@ func notifyServersOfNewNode(newNode NewNodeSetup) {
 //	This method is called by another load balancer to alert this load balancer
 //	of the addition of a server to the system.
 //
-func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
-	Logger.LogLocalEvent("received new load balancer")
+func (lbSvc *LBService) NewNode(inbuf []byte, /* message *NewNodeSetup,*/ reply *NodeListReply) error {
+	var message = new(NewNodeSetup)
+	Logger.UnpackReceive("received new load balancer", inbuf, message)
 
 	nodeConditional.L.Lock()
 	if isNewNode(message.UDP_IPPORT) {
@@ -947,8 +946,9 @@ func (lbSvc *LBService) NewNode(message *NewNodeSetup, reply *NodeListReply) err
 //	with the same username and password. The message will contain the username of the client
 //	and the value that the RPCAddress should be updated to
 //
-func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply) error {
-	Logger.LogLocalEvent("received client update")
+func (lbSvc *LBService) UpdateClient(inbuf []byte, /* message *NewClientObj,*/ reply *NodeListReply) error {
+	var message = new(NewClientObj)
+	Logger.UnpackReceive("received lb client update", inbuf, message)
 
 	clientConditional.L.Lock()
 
@@ -963,9 +963,9 @@ func (lbSvc *LBService) UpdateClient(message *NewClientObj, reply *NodeListReply
 //	This method is called by another load balancer to alert this load balancer
 //	of the addition of a client to the system.
 //
-//
-func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) error {
-	Logger.LogLocalEvent("received new client")
+func (lbSvc *LBService) NewClient(inbuf []byte, /* message *NewClientObj,*/ reply *NodeListReply) error {
+	var message = new(NewClientObj)
+	Logger.UnpackReceive("received new client", inbuf, &message)
 
 	clientConditional.L.Lock()
 
@@ -983,8 +983,9 @@ func (lbSvc *LBService) NewClient(message *NewClientObj, reply *NodeListReply) e
 //	and replys back with the current list of clients and server nodes
 //	in the system
 //
-func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) error {
-	Logger.LogLocalEvent("received request for current lb data")
+func (lbSvc *LBService) GetCurrentData(inbuf []byte, /* message *LBMessage,*/ reply *LBDataReply) error {
+	var message = new(LBMessage)
+	Logger.UnpackReceive("received request for current lb data", inbuf, &message)
 
 	if message.Message != "NIL" {
 		clientConditional.L.Lock()
@@ -1020,10 +1021,13 @@ func (lbSvc *LBService) GetCurrentData(message *LBMessage, reply *LBDataReply) e
 //
 //	Will add the file to the list of globally availible files and return "SUCCESS" upon completion.
 //
-func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
+func (nodeSvc *NodeService) NewFile(inbuf []byte, /*filename *string,*/ reply *string) error {
+	var filename = new(string)
+
 	filesCond.L.Lock()
-	globalFileList = append(globalFileList, *filename)
-	Logger.LogLocalEvent("new file added to file list")
+	Logger.UnpackReceive("new file added to file list", inbuf, &filename)
+
+	globalFileList = append(globalFileList, *filename)	
 	filesCond.L.Unlock()
 	(*reply) = "SUCCESS"
 	return nil
@@ -1036,8 +1040,9 @@ func (nodeSvc *NodeService) NewFile(filename *string, reply *string) error {
 //	routines that there is a new server added. All loadbalancers are alerted to the additional
 //	messaging server.
 //
-func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply) error {
-	Logger.LogLocalEvent("received new node connection")
+func (nodeSvc *NodeService) NewNode(inbuf []byte, /*message *NewNodeSetup,*/ reply *NodeListReply) error {
+	var message = new(NewNodeSetup)
+	Logger.UnpackReceive("received new node connection", inbuf, &message)
 
 	nodeConditional.L.Lock()
 
@@ -1065,8 +1070,9 @@ func (nodeSvc *NodeService) NewNode(message *NewNodeSetup, reply *NodeListReply)
 //	Given the username of the client in a ClientRequest message, the loadbalancer will return
 //	the public address that RPC calls can be received on for that client.
 //
-func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerReply) error {
-	Logger.LogLocalEvent("received request for client address")
+func (nodeSvc *NodeService) GetClientAddr(inbuf []byte, /*uname *ClientRequest, */addr *ServerReply) error {
+	var uname = new(ClientRequest)
+	Logger.UnpackReceive("received request for client address", inbuf, &uname)
 
 	clientConditional.L.Lock()
 
@@ -1102,21 +1108,20 @@ func (nodeSvc *NodeService) GetClientAddr(uname *ClientRequest, addr *ServerRepl
 //
 //	Calls are made to other load balancers to alert them to the changes.
 //
-func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *ServerReply) error {
+func (msgSvc *MessageService) JoinChatService(inbuf []byte, /*message *NewClientSetup,*/ reply *ServerReply) error {
 
 	// if user name not taken, server dials RPC address in message.RPCAddress
 	// and updates client with new rpc address, then replies WELCOME
 	// unless there is error dialing RPC to client then replies DIAL-ERROR
 	// otherwise, server replies, USERNAME-TAKEN
 
-	Logger.LogLocalEvent("received JoinChatService request")
+	var message = new(NewClientSetup)
+	Logger.UnpackReceive("received request to join chat service", inbuf, &message)
 
 	//check username, if taken reply username taken
 	//else dial rpc
 	if authenticationFailure(message.Username, message.Password, message.RpcAddress) {
-
 		reply.Message = "USERNAME-TAKEN"
-		Logger.LogLocalEvent("client unsuccessful in joining chat service")
 
 	} else {
 
@@ -1153,11 +1158,10 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 		rpcUpdateMessage.ServerRpcAddress = selectedServer.RPC_CLIENT_IPPORT
 		println(rpcUpdateMessage.ServerRpcAddress)
 
-		Logger.LogLocalEvent("update client rpc server")
-		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", rpcUpdateMessage, &clientReply)
+		outbuf := Logger.PrepareSend("update client rpc server", rpcUpdateMessage)
+		callErr := clientConn.Call("ClientMessageService.UpdateRpcChatServer", outbuf, &clientReply)
 		if callErr != nil {
 			reply.Message = "DIAL-ERROR"
-			Logger.LogLocalEvent("unable to update client rpc server")
 			return nil
 		}
 
@@ -1172,11 +1176,14 @@ func (msgSvc *MessageService) JoinChatService(message *NewClientSetup, reply *Se
 //
 //	This returns the list of all availible files to a client
 //
-func (msgSvc *MessageService) GetFileList(message *string, reply *([]string)) error {
-	Logger.LogLocalEvent("file list requested")
+func (msgSvc *MessageService) GetFileList(inbuf []byte, /*message *string,*/ reply *([]string)) error {
+	var message = new(string)
+	Logger.UnpackReceive("file list requested", inbuf, &message)
+
 	filesCond.L.Lock()
 	(*reply) = globalFileList
 	filesCond.L.Unlock()
+	
 	Logger.LogLocalEvent("returned file list")
 	return nil
 }
