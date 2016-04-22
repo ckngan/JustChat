@@ -1,11 +1,9 @@
 /src/github.com/
 /src/golang.org/
+/src/*.txt
 /pkg/
 /bin/
-/src/sys-Log.txt
-_sys-Log.txt
-./sys-Log.txt
 /Files/
-_Files
 /ChatHistory/
 /Downloads/
+/logs/

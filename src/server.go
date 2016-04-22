@@ -139,6 +139,7 @@ var numMsgsRcvd int                 // # of messages this node has received
 var toHistoryBuf []ClockedClientMsg // temp storage for messages before disk write
 var historyMutex *sync.Mutex
 var Logger *govec.GoLog // GoVector log
+var logMutex *sync.Mutex
 
 //**************************************************************************
 //
@@ -552,6 +553,7 @@ func main() {
 	// Create log
 	serverId := RECEIVE_PING_ADDR[16:]
 	Logger = govec.Initialize("server "+serverId, "server"+serverId)
+	logMutex = &sync.Mutex{}
 
 	joinStorageServers() // Joining the servers through the LB
 	go initPingServers(PingAddr)
@@ -986,7 +988,9 @@ func sendPublicMsgServers(message ClientMessage) {
 					//it's dead but the ping will eventually take care of it
 				} else {
 					var reply ServerReply
+					logMutex.Lock()
 					outbuf := Logger.PrepareSend("broadcasting public message", clockedMsg)
+					logMutex.Unlock()
 					err = systemService.Call("NodeService.SendPublicMsg", outbuf, &reply)
 					//checkError(err)
 					if err == nil {
@@ -1031,7 +1035,9 @@ func sendPublicMsgClients(message ClientMessage) {
 					clientListMutex.Unlock()
 				} else {
 					var reply ServerReply
+					logMutex.Lock()
 					outbuf := Logger.PrepareSend("sending public message", message)
+					logMutex.Unlock()
 					// client api uses ClientMessageService
 					errr := systemService.Call("ClientMessageService.ReceiveMessage", outbuf, &reply)
 					checkError(errr)
